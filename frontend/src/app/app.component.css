@@ -1,0 +1,106 @@
+:host {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  font-size: 14px;
+  color: #333;
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #ccc;
+  margin-bottom: 2rem;
+}
+
+header h1 {
+  font-size: 1.5rem;
+  margin: 0;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+button {
+  background-color: #3f51b5;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+}
+
+button:hover {
+  background-color: #303f9f;
+}
+
+.login-prompt {
+  margin-top: 4rem;
+  font-size: 1.2rem;
+  color: #666;
+}
+
+.memory-creator, .garden-display {
+  margin-top: 2rem;
+  padding: 2rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background-color: #ffffff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.memory-creator.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.loading-spinner {
+  padding: 2rem;
+  text-align: center;
+}
+
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3f51b5;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 1rem auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.memory-result img {
+  max-width: 100%;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  border: 1px solid #eee;
+}
+
+.memory-result .prompt-text {
+  font-style: italic;
+  color: #666;
+}
+
+.memory-result .user-text {
+  font-weight: bold;
+}

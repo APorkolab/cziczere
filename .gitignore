@@ -51,9 +51,15 @@ buildNumber.properties
 .angular/
 
 # Node modules and dependency files
-/node_modules/
+**/node_modules/
 /package-lock.json
 /yarn.lock
+
+# Firebase emulators
+/firebase-debug.log
+/.firebase/
+/firestore.rules.bak
+/storage.rules.bak
 
 # Environment files
 /.env
