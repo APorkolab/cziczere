@@ -11,19 +11,20 @@ import { ApiService, MemoryData } from './api.service';
 export class AppComponent {
   private auth: Auth = inject(Auth);
   private api: ApiService = inject(ApiService);
-  public readonly user: Observable<User | null> = authState(this.auth);
+  public readonly user$: Observable<User | null> = authState(this.auth);
+  public memories$: Observable<MemoryData[]>;
 
-  public latestMemory$ = new BehaviorSubject<MemoryData | null>(null);
   public isLoading$ = new BehaviorSubject<boolean>(false);
 
-  constructor() {}
+  constructor() {
+    this.memories$ = this.api.getMemories();
+  }
 
   onMemorySubmit(memoryText: string) {
     this.isLoading$.next(true);
-    this.latestMemory$.next(null);
     this.api.createMemory(memoryText).subscribe({
-      next: (memory) => {
-        this.latestMemory$.next(memory);
+      next: () => {
+        // The garden will update automatically via the real-time listener.
         this.isLoading$.next(false);
       },
       error: (err) => {
