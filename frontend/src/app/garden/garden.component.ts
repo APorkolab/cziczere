@@ -2,6 +2,7 @@ import { Component, AfterViewInit, ViewChild, ElementRef, Input, Output, EventEm
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { ApiService, AtmosphereData, MemoryData } from '../api.service';
+import { WeatherService } from '../weather.service';
 
 import { CommonModule } from '@angular/common';
 
@@ -23,7 +24,7 @@ export class GardenComponent implements AfterViewInit {
   private controls!: OrbitControls;
   private atmosphere: AtmosphereData | null = null;
 
-  constructor(private apiService: ApiService) {}
+  constructor(private apiService: ApiService, private weatherService: WeatherService) {}
 
   ngAfterViewInit(): void {
     this.createScene();
@@ -46,7 +47,9 @@ export class GardenComponent implements AfterViewInit {
       (data: AtmosphereData) => {
         this.atmosphere = data;
         this.scene.background = new THREE.Color(data.backgroundColor);
-        // TODO: Implement weather effects based on data.weather
+        if (data.weather === 'Rainy') {
+          this.weatherService.createRain(this.scene);
+        }
         console.log('Atmosphere data:', data);
       },
       (error) => {
@@ -85,6 +88,9 @@ export class GardenComponent implements AfterViewInit {
     (function render() {
       requestAnimationFrame(render);
       component.controls.update();
+      if (component.atmosphere?.weather === 'Rainy') {
+        component.weatherService.updateRain();
+      }
       component.renderer.render(component.scene, component.camera);
     }());
   }
