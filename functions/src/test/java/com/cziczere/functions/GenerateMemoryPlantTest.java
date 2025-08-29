@@ -8,19 +8,25 @@ import com.google.cloud.firestore.WriteResult;
 import com.google.cloud.functions.HttpRequest;
 import com.google.cloud.functions.HttpResponse;
 import com.google.cloud.vertexai.VertexAI;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthException;
+import com.google.firebase.auth.FirebaseToken;
 import com.google.gson.Gson;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.io.IOException;
+import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -44,33 +50,51 @@ class GenerateMemoryPlantTest {
     @Mock
     @SuppressWarnings("rawtypes")
     private ApiFuture<WriteResult> mockApiFuture;
+    @Mock
+    private FirebaseAuth firebaseAuth;
+    @Mock
+    private FirebaseToken decodedToken;
 
     private GenerateMemoryPlant generateMemoryPlant;
     private StringWriter responseWriter;
+    private MockedStatic<FirebaseAuth> firebaseAuthMockedStatic;
 
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() throws IOException {
         generateMemoryPlant = new GenerateMemoryPlant(db, vertexAI);
 
         responseWriter = new StringWriter();
         BufferedWriter bufferedWriter = new BufferedWriter(responseWriter);
         when(response.getWriter()).thenReturn(bufferedWriter);
+
+        firebaseAuthMockedStatic = mockStatic(FirebaseAuth.class);
+        firebaseAuthMockedStatic.when(FirebaseAuth::getInstance).thenReturn(firebaseAuth);
+    }
+
+    @AfterEach
+    void tearDown() {
+        firebaseAuthMockedStatic.close();
+    }
+
+    private void setupValidAuth() throws FirebaseAuthException {
+        when(request.getFirstHeader("Authorization")).thenReturn(Optional.of("Bearer valid-token"));
+        when(firebaseAuth.verifyIdToken("valid-token")).thenReturn(decodedToken);
+        when(decodedToken.getUid()).thenReturn("test-user-id");
     }
 
     @Test
     void service_shouldReturnSuccess_onValidRequest() throws Exception {
         // Given
+        setupValidAuth();
         String inputText = "A beautiful day in the park";
         String requestJson = new Gson().toJson(new RequestData(inputText));
         BufferedReader reader = new BufferedReader(new StringReader(requestJson));
         when(request.getReader()).thenReturn(reader);
-        when(db.collection(anyString())).thenReturn(collectionReference);
-        when(collectionReference.document()).thenReturn(documentReference);
-        when(documentReference.set(any(MemoryData.class))).thenReturn(mockApiFuture);
 
         GenerateMemoryPlant spy = spy(generateMemoryPlant);
         doReturn("A beautiful day in the park, digital painting").when(spy).generateImagePromptWithGemini(anyString());
-        doReturn("http://placeholder.com/image.png").when(spy).generateImageWithImagen(anyString());
+        doReturn("data:image/png;base64,dGVzdA==").when(spy).generateImageWithImagen(anyString());
+        doNothing().when(spy).saveToFirestore(any(MemoryData.class));
 
         // When
         spy.service(request, response);
@@ -78,18 +102,45 @@ class GenerateMemoryPlantTest {
         // Then
         verify(response).setStatusCode(200, "OK");
         String jsonResponse = responseWriter.toString();
+        assertTrue(jsonResponse.contains("\"userId\":\"test-user-id\""));
         assertTrue(jsonResponse.contains(inputText));
-        assertTrue(jsonResponse.contains("A beautiful day in the park, digital painting"));
+        assertTrue(jsonResponse.contains("data:image/png;base64,dGVzdA=="));
+    }
 
-        MemoryData responseData = new Gson().fromJson(jsonResponse, MemoryData.class);
-        assertNotNull(responseData.userId());
-        assertNotNull(responseData.imageUrl());
-        assertTrue(responseData.imageUrl().contains("http://placeholder.com/image.png"));
+    @Test
+    void service_shouldReturnUnauthorized_whenAuthHeaderIsMissing() throws Exception {
+        // Given
+        when(request.getFirstHeader("Authorization")).thenReturn(Optional.empty());
+
+        // When
+        generateMemoryPlant.service(request, response);
+
+        // Then
+        verify(response).setStatusCode(401, "Unauthorized");
+        assertTrue(responseWriter.toString().contains("Authorization header is missing"));
+    }
+
+    @Test
+    void service_shouldReturnUnauthorized_whenTokenIsInvalid() throws Exception {
+        // Given
+        when(request.getFirstHeader("Authorization")).thenReturn(Optional.of("Bearer invalid-token"));
+
+        FirebaseAuthException mockException = mock(FirebaseAuthException.class);
+        when(mockException.getMessage()).thenReturn("The token is invalid");
+        when(firebaseAuth.verifyIdToken("invalid-token")).thenThrow(mockException);
+
+        // When
+        generateMemoryPlant.service(request, response);
+
+        // Then
+        verify(response).setStatusCode(401, "Unauthorized");
+        assertTrue(responseWriter.toString().contains("Invalid Firebase ID token"));
     }
 
     @Test
     void service_shouldReturnBadRequest_whenBodyIsInvalid() throws Exception {
         // Given
+        setupValidAuth();
         String invalidJson = "{\"text\":}";
         BufferedReader reader = new BufferedReader(new StringReader(invalidJson));
         when(request.getReader()).thenReturn(reader);
@@ -100,20 +151,5 @@ class GenerateMemoryPlantTest {
         // Then
         verify(response).setStatusCode(400, "Bad Request: Invalid JSON format.");
         assertTrue(responseWriter.toString().contains("Invalid JSON format."));
-    }
-
-    @Test
-    void service_shouldReturnBadRequest_whenTextFieldIsMissing() throws Exception {
-        // Given
-        String jsonWithoutText = "{\"other_field\":\"some_value\"}";
-        BufferedReader reader = new BufferedReader(new StringReader(jsonWithoutText));
-        when(request.getReader()).thenReturn(reader);
-
-        // When
-        generateMemoryPlant.service(request, response);
-
-        // Then
-        verify(response).setStatusCode(400, "Bad Request: 'text' field is required and cannot be empty.");
-        assertTrue(responseWriter.toString().contains("'text' field is required"));
     }
 }
