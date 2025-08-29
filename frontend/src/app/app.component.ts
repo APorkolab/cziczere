@@ -66,4 +66,9 @@ export class AppComponent {
   logout() {
     signOut(this.auth);
   }
+
+  onMemoryClicked(memory: MemoryData) {
+    console.log('Memory clicked:', memory);
+    alert(`Memory: "${memory.userText}"`);
+  }
 }

@@ -1,0 +1,97 @@
+import { Component, AfterViewInit, ViewChild, ElementRef, Input, Output, EventEmitter } from '@angular/core';
+import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { MemoryData } from '../api.service';
+
+import { CommonModule } from '@angular/common';
+
+@Component({
+  selector: 'app-garden',
+  templateUrl: './garden.component.html',
+  styleUrls: ['./garden.component.css'],
+  standalone: true,
+  imports: [CommonModule]
+})
+export class GardenComponent implements AfterViewInit {
+  @ViewChild('canvas') private canvasRef!: ElementRef;
+  @Input() memories: MemoryData[] = [];
+  @Output() memoryClicked = new EventEmitter<MemoryData>();
+
+  private camera!: THREE.PerspectiveCamera;
+  private scene!: THREE.Scene;
+  private renderer!: THREE.WebGLRenderer;
+  private controls!: OrbitControls;
+
+  ngAfterViewInit(): void {
+    this.createScene();
+    this.createControls();
+    this.createMemories();
+    this.startRenderingLoop();
+  }
+
+  private createScene(): void {
+    this.scene = new THREE.Scene();
+    this.scene.background = new THREE.Color(0xabcdef);
+    this.camera = new THREE.PerspectiveCamera(75, this.getAspectRatio(), 0.1, 1000);
+    this.camera.position.z = 5;
+  }
+
+  private createControls(): void {
+    const canvas = this.canvasRef.nativeElement;
+    this.renderer = new THREE.WebGLRenderer({ canvas });
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+    this.controls.enableDamping = true;
+  }
+
+  private createMemories(): void {
+    const textureLoader = new THREE.TextureLoader();
+    const geometry = new THREE.PlaneGeometry(1, 1);
+
+    this.memories.forEach((memory, index) => {
+      const texture = textureLoader.load(memory.imageUrl);
+      const material = new THREE.MeshBasicMaterial({ map: texture });
+      const plane = new THREE.Mesh(geometry, material);
+
+      const x = (index % 5 - 2) * 2;
+      const y = (Math.floor(index / 5) - 2) * -2;
+      plane.position.set(x, y, 0);
+
+      this.scene.add(plane);
+    });
+  }
+
+  private startRenderingLoop(): void {
+    const component: GardenComponent = this;
+    (function render() {
+      requestAnimationFrame(render);
+      component.controls.update();
+      component.renderer.render(component.scene, component.camera);
+    }());
+  }
+
+  private getAspectRatio(): number {
+    return this.canvasRef.nativeElement.clientWidth / this.canvasRef.nativeElement.clientHeight;
+  }
+
+  onCanvasClick(event: MouseEvent): void {
+    const canvas = this.canvasRef.nativeElement;
+    const rect = canvas.getBoundingClientRect();
+    const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+    const mouse = new THREE.Vector2(x, y);
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, this.camera);
+
+    const intersects = raycaster.intersectObjects(this.scene.children);
+
+    if (intersects.length > 0) {
+      const clickedObject = intersects[0].object;
+      const memoryIndex = this.scene.children.indexOf(clickedObject) - 1; // -1 for the light
+      if (this.memories[memoryIndex]) {
+        this.memoryClicked.emit(this.memories[memoryIndex]);
+      }
+    }
+  }
+}
