@@ -1,7 +1,7 @@
 import { Component, AfterViewInit, ViewChild, ElementRef, Input, Output, EventEmitter } from '@angular/core';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { MemoryData } from '../api.service';
+import { ApiService, AtmosphereData, MemoryData } from '../api.service';
 
 import { CommonModule } from '@angular/common';
 
@@ -21,19 +21,38 @@ export class GardenComponent implements AfterViewInit {
   private scene!: THREE.Scene;
   private renderer!: THREE.WebGLRenderer;
   private controls!: OrbitControls;
+  private atmosphere: AtmosphereData | null = null;
+
+  constructor(private apiService: ApiService) {}
 
   ngAfterViewInit(): void {
     this.createScene();
     this.createControls();
     this.createMemories();
     this.startRenderingLoop();
+    this.getAtmosphere();
   }
 
   private createScene(): void {
     this.scene = new THREE.Scene();
+    // Set a default background color
     this.scene.background = new THREE.Color(0xabcdef);
     this.camera = new THREE.PerspectiveCamera(75, this.getAspectRatio(), 0.1, 1000);
     this.camera.position.z = 5;
+  }
+
+  private getAtmosphere(): void {
+    this.apiService.getAtmosphere().subscribe(
+      (data: AtmosphereData) => {
+        this.atmosphere = data;
+        this.scene.background = new THREE.Color(data.backgroundColor);
+        // TODO: Implement weather effects based on data.weather
+        console.log('Atmosphere data:', data);
+      },
+      (error) => {
+        console.error('Error getting atmosphere:', error);
+      }
+    );
   }
 
   private createControls(): void {
