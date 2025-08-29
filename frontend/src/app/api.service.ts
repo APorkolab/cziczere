@@ -16,6 +16,7 @@ export interface InsightData {
   userId: string;
   text: string;
   timestamp: number;
+  type: string;
 }
 
 export interface AtmosphereData {
@@ -65,7 +66,7 @@ export class ApiService {
     );
   }
 
-  requestInsight(): Observable<InsightData> {
+  requestInsight(analysisType: string = 'insight'): Observable<InsightData> {
     return idToken(this.auth).pipe(
       first(),
       switchMap(token => {
@@ -73,7 +74,8 @@ export class ApiService {
           throw new Error('User not logged in!');
         }
         const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
-        return this.http.post<InsightData>(this.analyzeFunctionUrl, {}, { headers });
+        const body = { analysisType };
+        return this.http.post<InsightData>(this.analyzeFunctionUrl, body, { headers });
       })
     );
   }
