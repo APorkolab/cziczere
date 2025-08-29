@@ -1,0 +1,29 @@
+.insight-container {
+  background-color: #f0f4f8; /* A light, calming blue-gray */
+  border-left: 5px solid #4a90e2; /* A friendly blue border */
+  padding: 1rem;
+  margin: 1.5rem 0;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  transition: all 0.3s ease-in-out;
+}
+
+.insight-container:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+}
+
+.gardener-icon {
+  font-size: 2rem;
+}
+
+.insight-text {
+  font-family: 'Georgia', serif;
+  font-style: italic;
+  font-size: 1.1rem;
+  color: #333;
+  margin: 0;
+}

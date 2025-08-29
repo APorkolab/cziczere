@@ -8,6 +8,7 @@ import com.google.cloud.firestore.WriteResult;
 import com.google.cloud.functions.HttpRequest;
 import com.google.cloud.functions.HttpResponse;
 import com.google.cloud.vertexai.VertexAI;
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseToken;
@@ -27,6 +28,7 @@ import java.io.StringWriter;
 import java.io.IOException;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -58,22 +60,31 @@ class GenerateMemoryPlantTest {
     private GenerateMemoryPlant generateMemoryPlant;
     private StringWriter responseWriter;
     private MockedStatic<FirebaseAuth> firebaseAuthMockedStatic;
+    private MockedStatic<FirebaseApp> firebaseAppMockedStatic;
+    @Mock
+    private FirebaseApp mockFirebaseApp;
+
 
     @BeforeEach
     void setUp() throws IOException {
+        // Mock all static Firebase methods
+        firebaseAuthMockedStatic = mockStatic(FirebaseAuth.class);
+        firebaseAuthMockedStatic.when(FirebaseAuth::getInstance).thenReturn(firebaseAuth);
+        firebaseAppMockedStatic = mockStatic(FirebaseApp.class);
+        firebaseAppMockedStatic.when(FirebaseApp::getApps).thenReturn(java.util.List.of(mockFirebaseApp));
+
+
         generateMemoryPlant = new GenerateMemoryPlant(db, vertexAI);
 
         responseWriter = new StringWriter();
         BufferedWriter bufferedWriter = new BufferedWriter(responseWriter);
         when(response.getWriter()).thenReturn(bufferedWriter);
-
-        firebaseAuthMockedStatic = mockStatic(FirebaseAuth.class);
-        firebaseAuthMockedStatic.when(FirebaseAuth::getInstance).thenReturn(firebaseAuth);
     }
 
     @AfterEach
     void tearDown() {
         firebaseAuthMockedStatic.close();
+        firebaseAppMockedStatic.close();
     }
 
     private void setupValidAuth() throws FirebaseAuthException {
@@ -102,9 +113,13 @@ class GenerateMemoryPlantTest {
         // Then
         verify(response).setStatusCode(200, "OK");
         String jsonResponse = responseWriter.toString();
-        assertTrue(jsonResponse.contains("\"userId\":\"test-user-id\""));
-        assertTrue(jsonResponse.contains(inputText));
-        assertTrue(jsonResponse.contains("data:image/png;base64,dGVzdA=="));
+
+        Gson gson = new Gson();
+        MemoryData responseData = gson.fromJson(jsonResponse, MemoryData.class);
+
+        assertEquals("test-user-id", responseData.userId());
+        assertEquals(inputText, responseData.userText());
+        assertEquals("data:image/png;base64,dGVzdA==", responseData.imageUrl());
     }
 
     @Test

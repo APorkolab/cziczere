@@ -21,6 +21,21 @@
     </div>
 
     <app-garden-canvas [memories]="memories$ | async"></app-garden-canvas>
+
+    <div class="gardener-actions">
+      <button (click)="requestInsight()" [disabled]="isInsightLoading$ | async">
+        <ng-container *ngIf="!(isInsightLoading$ | async); else insightLoading">
+          Ask the Gardener for an Insight
+        </ng-container>
+        <ng-template #insightLoading>
+          <div class="spinner-small"></div>
+          The Gardener is reflecting...
+        </ng-template>
+      </button>
+    </div>
+
+    <app-insight-display [insight]="latestInsight$ | async"></app-insight-display>
+
   </main>
 
   <div *ngIf="!(user$ | async)" class="login-prompt">

@@ -1,8 +1,22 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if false; // update later
+
+    // Users can only read and write their own memories.
+    match /memories/{memoryId} {
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      // Update and delete are not currently used by the client, so we don't allow them.
+      allow update, delete: if false;
+    }
+
+    // Users can only read their own insights.
+    // Insights are created by a Cloud Function, not the client, but we add a rule for client-side reads.
+    match /insights/{insightId} {
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      // Create, update, and delete are restricted to backend (Cloud Functions) only.
+      allow create, update, delete: if false;
     }
   }
 }
