@@ -2,7 +2,6 @@ import { Component, AfterViewInit, ViewChild, ElementRef, Input, Output, EventEm
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { ApiService, AtmosphereData, MemoryData } from '../api.service';
-import { WeatherService } from '../weather.service';
 
 import { CommonModule } from '@angular/common';
 
@@ -15,6 +14,7 @@ import { CommonModule } from '@angular/common';
 })
 export class GardenComponent implements AfterViewInit {
   @ViewChild('canvas') private canvasRef!: ElementRef;
+  @ViewChild('audioPlayer') private audioPlayerRef!: ElementRef<HTMLAudioElement>;
   @Input() memories: MemoryData[] = [];
   @Output() memoryClicked = new EventEmitter<MemoryData>();
 
@@ -24,7 +24,7 @@ export class GardenComponent implements AfterViewInit {
   private controls!: OrbitControls;
   private atmosphere: AtmosphereData | null = null;
 
-  constructor(private apiService: ApiService, private weatherService: WeatherService) {}
+  constructor(private apiService: ApiService) {}
 
   ngAfterViewInit(): void {
     this.createScene();
@@ -47,10 +47,18 @@ export class GardenComponent implements AfterViewInit {
       (data: AtmosphereData) => {
         this.atmosphere = data;
         this.scene.background = new THREE.Color(data.backgroundColor);
-        if (data.weather === 'Rainy') {
-          this.weatherService.createRain(this.scene);
-        }
+        // TODO: Implement weather effects based on data.weather
         console.log('Atmosphere data:', data);
+
+        // Play music
+        if (data.musicUrl) {
+          const audioPlayer = this.audioPlayerRef.nativeElement;
+          audioPlayer.src = data.musicUrl;
+          audioPlayer.play().catch(error => {
+            console.warn("Audio autoplay was prevented by the browser.", error);
+            // We could show a "Click to play music" button here if needed.
+          });
+        }
       },
       (error) => {
         console.error('Error getting atmosphere:', error);
@@ -88,9 +96,6 @@ export class GardenComponent implements AfterViewInit {
     (function render() {
       requestAnimationFrame(render);
       component.controls.update();
-      if (component.atmosphere?.weather === 'Rainy') {
-        component.weatherService.updateRain();
-      }
       component.renderer.render(component.scene, component.camera);
     }());
   }
