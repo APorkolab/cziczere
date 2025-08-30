@@ -90,6 +90,15 @@ public class AnalyzeMemories implements HttpFunction {
                 List<MemoryData> memories;
 
                 switch (analysisType) {
+                    case "monthly_insight":
+                        memories = getMonthlyMemoriesForUser(userId);
+                        if (memories.isEmpty()) {
+                            response.setStatusCode(404, "Not Found");
+                            writer.write("{\"message\":\"No memories in the last month to analyze.\"}");
+                            return;
+                        }
+                        insightText = generateMonthlyInsight(memories);
+                        break;
                     case "weekly_summary":
                         memories = getRecentMemoriesForUser(userId);
                         if (memories.isEmpty()) {
@@ -223,6 +232,36 @@ public class AnalyzeMemories implements HttpFunction {
         }
     }
 
+    private String generateMonthlyInsight(List<MemoryData> memories) throws IOException {
+        // TODO: Include mood in the prompt once it's available in MemoryData
+        String combinedMemories = memories.stream()
+                .map(MemoryData::userText)
+                .collect(Collectors.joining("\n---\n"));
+
+        GenerativeModel model = new GenerativeModel("gemini-1.5-flash-001", this.vertexAI);
+        String systemPrompt = "You are the Gardener's Assistant, a reflective and insightful AI. " +
+                "You will be given a list of a user's memories and their associated moods from the past month. " +
+                "Your task is to identify deep, overarching patterns, shifts in mood, or recurring themes that might not be obvious week-to-week. " +
+                "Synthesize your observations into a thoughtful, multi-sentence paragraph that offers a kind and supportive long-term reflection. " +
+                "Address the user directly. Start with a phrase that acknowledges the longer time frame, like 'Looking back on the past month...'. " +
+                "Your insight should be more profound than a simple summary. " +
+                "For example: 'Looking back on the past month, I've noticed a beautiful pattern of you finding moments of quiet joy in your daily routine, even when things felt challenging. It seems these small, calm moments are a real source of strength for you.' " +
+                "Output only the insightful paragraph and nothing else.";
+
+        String fullPrompt = systemPrompt + "\n\nHere are the user's memories from the month:\n" + combinedMemories;
+
+        try {
+            logger.info("Generating monthly insight with Gemini for user.");
+            GenerateContentResponse response = model.generateContent(fullPrompt);
+            String generatedInsight = response.getCandidates(0).getContent().getParts(0).getText();
+            logger.info("Generated monthly insight: " + generatedInsight);
+            return generatedInsight.trim();
+        } catch (Exception e) {
+            logger.severe("Error generating monthly insight with Gemini: " + e.getMessage());
+            return "There was an error reflecting on your past month, but I hope it was a time of growth and discovery.";
+        }
+    }
+
     void saveInsightToFirestore(InsightData data) throws ExecutionException, InterruptedException {
         logger.info("Saving insight data to Firestore collection 'insights': " + data);
         db.collection("insights").document().set(data).get();
@@ -235,6 +274,19 @@ public class AnalyzeMemories implements HttpFunction {
         Query query = memoriesCollection
                 .whereEqualTo("userId", userId)
                 .whereGreaterThanOrEqualTo("timestamp", sevenDaysAgo);
+
+        List<com.google.cloud.firestore.QueryDocumentSnapshot> documents = query.get().get().getDocuments();
+        return documents.stream()
+                .map(doc -> doc.toObject(MemoryData.class))
+                .collect(Collectors.toList());
+    }
+
+    private List<MemoryData> getMonthlyMemoriesForUser(String userId) throws ExecutionException, InterruptedException {
+        CollectionReference memoriesCollection = db.collection("memories");
+        long thirtyDaysAgo = System.currentTimeMillis() - (30L * 24 * 60 * 60 * 1000);
+        Query query = memoriesCollection
+                .whereEqualTo("userId", userId)
+                .whereGreaterThanOrEqualTo("timestamp", thirtyDaysAgo);
 
         List<com.google.cloud.firestore.QueryDocumentSnapshot> documents = query.get().get().getDocuments();
         return documents.stream()
