@@ -1,10 +1,36 @@
-<div style="text-align:center">
-  <h1>
-    🌱 Welcome to Cziczere
-  </h1>
-  <p>Your digital memory garden is growing...</p>
+<div class="container">
+  <header>
+    <h1>🌱 Cziczere: The Digital Memory Garden</h1>
+    <ng-container *ngIf="user | async as currentUser; else showLogin">
+      <div class="user-info">
+        <span>Welcome, {{ currentUser.displayName }}!</span>
+        <button (click)="logout()">Logout</button>
+      </div>
+    </ng-container>
+    <ng-template #showLogin>
+      <button (click)="login()">Login with Google</button>
+    </ng-template>
+  </header>
+
+  <main *ngIf="user | async">
+    <app-memory-create (memorySubmit)="onMemorySubmit($event)" [class.disabled]="isLoading$ | async"></app-memory-create>
+
+    <div class="garden-display">
+      <h2>Your Latest Creation</h2>
+      <div *ngIf="isLoading$ | async" class="loading-spinner">
+        <p>Planting your memory... the AI is hard at work!</p>
+        <div class="spinner"></div>
+      </div>
+
+      <div *ngIf="latestMemory$ | async as memory" class="memory-result">
+        <img [src]="memory.imageUrl" alt="Generated Memory Image">
+        <p class="prompt-text"><strong>Generated Prompt:</strong> {{ memory.imagePrompt }}</p>
+        <p class="user-text"><strong>Your Memory:</strong> {{ memory.userText }}</p>
+      </div>
+    </div>
+  </main>
+
+  <div *ngIf="!(user | async)" class="login-prompt">
+    <p>Please log in to cultivate your memory garden.</p>
+  </div>
 </div>
-
-<hr>
-
-<app-memory-input></app-memory-input>

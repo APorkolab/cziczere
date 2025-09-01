@@ -1,0 +1,8 @@
+<form [formGroup]="memoryForm" (ngSubmit)="onSubmit()" class="memory-form">
+  <textarea formControlName="text" placeholder="What beautiful memory will you plant today?" rows="4"></textarea>
+  <div *ngIf="memoryForm.controls.text.invalid && (memoryForm.controls.text.dirty || memoryForm.controls.text.touched)" class="error-message">
+    <small *ngIf="memoryForm.controls.text.errors?.['required']">A memory is required.</small>
+    <small *ngIf="memoryForm.controls.text.errors?.['minlength']">Please elaborate a bit more on your memory (at least 10 characters).</small>
+  </div>
+  <button type="submit" [disabled]="memoryForm.invalid">Plant Memory Seed</button>
+</form>
