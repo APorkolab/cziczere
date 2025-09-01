@@ -1,7 +1,6 @@
 import { Component, AfterViewInit, ViewChild, ElementRef, Input, Output, EventEmitter } from '@angular/core';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { VRButton } from 'three/examples/jsm/webxr/VRButton.js';
 import { ApiService, AtmosphereData, MemoryData } from '../api.service';
 
 import { CommonModule } from '@angular/common';
@@ -60,10 +59,6 @@ export class GardenComponent implements AfterViewInit {
     const canvas = this.canvasRef.nativeElement;
     this.renderer = new THREE.WebGLRenderer({ canvas });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-
-    this.renderer.xr.enabled = true;
-    this.canvasRef.nativeElement.parentElement.appendChild(VRButton.createButton(this.renderer));
-
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
   }
@@ -86,10 +81,12 @@ export class GardenComponent implements AfterViewInit {
   }
 
   private startRenderingLoop(): void {
-    this.renderer.setAnimationLoop(() => {
-      this.controls.update();
-      this.renderer.render(this.scene, this.camera);
-    });
+    const component: GardenComponent = this;
+    (function render() {
+      requestAnimationFrame(render);
+      component.controls.update();
+      component.renderer.render(component.scene, component.camera);
+    }());
   }
 
   private getAspectRatio(): number {
@@ -115,5 +112,47 @@ export class GardenComponent implements AfterViewInit {
         this.memoryClicked.emit(this.memories[memoryIndex]);
       }
     }
+  }
+
+  exportAsPoster(): void {
+    const posterWidth = 4096;
+    const posterHeight = 4096;
+
+    const posterRenderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    posterRenderer.setSize(posterWidth, posterHeight);
+
+    // Temporarily add the renderer to the DOM to ensure it has a valid context
+    posterRenderer.domElement.style.position = 'absolute';
+    posterRenderer.domElement.style.left = '-9999px';
+    document.body.appendChild(posterRenderer.domElement);
+
+
+    // Use a new camera to fit the entire garden in the view
+    const boundingBox = new THREE.Box3().setFromObject(this.scene);
+    const center = boundingBox.getCenter(new THREE.Vector3());
+    const size = boundingBox.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const fov = this.camera.fov * (Math.PI / 180);
+    let cameraZ = Math.abs(maxDim / 2 * Math.tan(fov * 2));
+    cameraZ *= 1.1; // Add a bit of padding
+
+    const posterCamera = new THREE.PerspectiveCamera(
+      this.camera.fov,
+      posterWidth / posterHeight,
+      0.1,
+      1000
+    );
+    posterCamera.position.set(center.x, center.y, center.z + cameraZ);
+    posterCamera.lookAt(center);
+
+    posterRenderer.render(this.scene, posterCamera);
+
+    const link = document.createElement('a');
+    link.download = 'kert-poszter.png';
+    link.href = posterRenderer.domElement.toDataURL('image/png');
+    link.click();
+
+    // Clean up the temporary renderer
+    document.body.removeChild(posterRenderer.domElement);
   }
 }
