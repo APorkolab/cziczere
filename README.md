@@ -5,11 +5,11 @@ Cziczere is a generative art and digital well-being application that transforms 
 
 This project is not a journal; it's an interactive art piece powered by your own reflections.
 
-## ## Core Concept & Vision
+## Core Concept & Vision
 
 In a fast-paced digital world, Cziczere offers a space for quiet reflection. The core philosophy is to leverage technology not for productivity, but for mindfulness. By focusing on positive memories and gratitude, users cultivate a personal garden that serves as a visual representation of their joy and peace. The application uses a serverless architecture on Google Cloud to provide a scalable, cost-effective, and intelligent experience.
 
-## ## ✨ Key Features
+## ✨ Key Features
 
 -   **AI-Enhanced Memory Input**: A Large Language Model (LLM) analyzes user's memories to identify key themes, sentiments, and generate a creative prompt for image generation.
     
@@ -25,7 +25,7 @@ In a fast-paced digital world, Cziczere offers a space for quiet reflection. The
 -   **AR/VR Mode**: Place your memories in your own room and view them in augmented reality.
 -   **Comprehensive Backend Unit Tests**: The backend functions are now covered by a suite of unit tests using JUnit and Mockito to ensure reliability and correctness.
 
-## ## 🛠️ Tech Stack & Architecture
+## 🛠️ Tech Stack & Architecture
 
 This project is built on a fully serverless, cost-optimized architecture using the Google Cloud & Firebase ecosystem.
 
@@ -140,6 +140,11 @@ Contributions are welcome! If you have ideas for new features or improvements, p
 - Commit your Changes (git commit -m 'Add some AmazingFeature')
 - Push to the Branch (git push origin feature/AmazingFeature)
 - Open a Pull Request
+
+## 🚀 Future Work
+
+-   **True AI-Generated Ambient Music**: The current implementation uses placeholder sounds. A future enhancement would be to integrate a true text-to-music AI to generate unique soundscapes for each mood.
+-   **Therapeutic Tool**: With the involvement of psychologists, the application could be further developed into a scientifically supported mental health tool.
 
 ## 📄 License
 
