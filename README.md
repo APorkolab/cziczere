@@ -11,15 +11,17 @@ In a fast-paced digital world, Cziczere offers a space for quiet reflection. The
 
 ## ## ✨ Key Features
 
--   **AI-Enhanced Memory Input**: A Large Language Model (LLM) assists users in articulating their thoughts, identifying key themes and sentiments.
+-   **AI-Enhanced Memory Input**: A Large Language Model (LLM) analyzes user's memories to identify key themes, sentiments, and generate a creative prompt for image generation.
     
--   **Generative Visuals**: Each memory is translated by a powerful AI prompt engine and rendered by an image generation model (Google Imagen) into a unique plant, flower, or glowing mushroom.
+-   **Generative Visuals**: Each memory is rendered by Google's Imagen model into a unique visual element, which is then stored in Google Cloud Storage.
     
--   **Dynamic Garden Atmosphere**: The garden's ambient environment (lighting, weather, sound) subtly changes based on the overall mood of the memories planted over time.
+-   **Secure Authentication**: User authentication is handled by Firebase Authentication, ensuring that each user's garden is private and secure.
+
+-   **(In-Progress) Dynamic Garden Atmosphere**: The garden's ambient environment (lighting, weather, sound) will subtly change based on the overall mood of the memories planted over time.
     
--   **Interactive Exploration**: Users can navigate their 3D garden, revisit memories by clicking on their corresponding plants, and watch their landscape flourish.
+-   **(Planned) Interactive Exploration**: Users will be able to navigate their 3D garden, revisit memories by clicking on their corresponding plants, and watch their landscape flourish.
     
--   **The Gardener's Assistant**: An AI-powered conversational agent that helps users find patterns in their thoughts and offers gentle prompts for reflection.
+-   **(Planned) The Gardener's Assistant**: An AI-powered conversational agent that helps users find patterns in their thoughts and offers gentle prompts for reflection.
 
 ## ## 🛠️ Tech Stack & Architecture
 
@@ -31,9 +33,10 @@ This project is built on a fully serverless, cost-optimized architecture using t
 | **Frontend**      | [Angular](https://angular.io/)                                                                           | Modern, component-based framework for the user interface.                                         |
 |                   | [Three.js](https://threejs.org/) / [p5.js](https://p5js.org/)                                            | WebGL library for rendering the 2D/3D garden canvas.                                              |
 | **Hosting**       | [Firebase Hosting](https://firebase.google.com/docs/hosting)                                             | Global CDN for fast delivery of the frontend application.                                          |
-| **Backend Logic** | [Cloud Functions for Firebase](https://firebase.google.com/docs/functions)                               | Serverless functions to orchestrate AI calls and database interactions.                           |
-| **Database**      | [Cloud Firestore](https://firebase.google.com/docs/firestore)                                            | Real-time NoSQL database for storing memories and generated data.                                 |
-| **Authentication**| [Firebase Authentication](https://firebase.google.com/docs/auth)                                         | Secure, managed user authentication (Google, Email, etc.).                                        |
+| **Backend Logic** | [Cloud Functions for Firebase](https://firebase.google.com/docs/functions) (Java)                        | A Java-based serverless function that orchestrates AI calls and database interactions.            |
+| **Database**      | [Cloud Firestore](https://firebase.google.com/docs/firestore)                                            | Real-time NoSQL database for storing memories, prompts, emotions, and image URLs.                 |
+| **Authentication**| [Firebase Authentication](https://firebase.google.com/docs/auth)                                         | Secure, managed user authentication via Firebase ID tokens.                                       |
+| **Image Storage** | [Google Cloud Storage](https://cloud.google.com/storage)                                                 | Stores the generated images and provides public URLs for access.                                  |
 | **AI Services**   | [Google Vertex AI](https://cloud.google.com/vertex-ai)                                                   | - **Gemini 1.5 Flash:** Text analysis and image prompt generation.<br>- **Imagen:** Generative image creation. |
 
 ## 🚀 Getting Started

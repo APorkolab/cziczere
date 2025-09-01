@@ -17,18 +17,31 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseToken;
 import com.google.gson.JsonSyntaxException;
+import com.google.cloud.aiplatform.v1.EndpointName;
+import com.google.cloud.aiplatform.v1.PredictResponse;
+import com.google.cloud.aiplatform.v1.PredictionServiceClient;
+import com.google.cloud.aiplatform.v1.PredictionServiceSettings;
+import com.google.cloud.storage.BlobId;
+import com.google.cloud.storage.BlobInfo;
+import com.google.cloud.storage.Storage;
+import com.google.cloud.storage.StorageOptions;
 import com.google.protobuf.Value;
 import com.google.protobuf.util.JsonFormat;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class GenerateMemoryPlant implements HttpFunction {
 
@@ -40,6 +53,9 @@ public class GenerateMemoryPlant implements HttpFunction {
 
     private final Firestore db;
     private final VertexAI vertexAI;
+    private final Storage storage;
+
+    private static final String GCS_BUCKET_NAME = System.getenv().getOrDefault("GCS_BUCKET_NAME", "your-gcs-bucket-name");
 
     // A record to hold the structured response from Gemini.
     record GeminiResponse(String imagePrompt, Map<String, Double> emotions) {}
@@ -66,12 +82,14 @@ public class GenerateMemoryPlant implements HttpFunction {
     public GenerateMemoryPlant() throws IOException {
         this.db = FirestoreOptions.getDefaultInstance().getService();
         this.vertexAI = new VertexAI(PROJECT_ID, REGION);
+        this.storage = StorageOptions.newBuilder().setProjectId(PROJECT_ID).build().getService();
     }
 
     // This constructor is used for testing, allowing injection of mocks.
-    GenerateMemoryPlant(Firestore db, VertexAI vertexAI) {
+    GenerateMemoryPlant(Firestore db, VertexAI vertexAI, Storage storage) {
         this.db = db;
         this.vertexAI = vertexAI;
+        this.storage = storage;
     }
 
     // Custom exception for auth errors
@@ -162,17 +180,24 @@ public class GenerateMemoryPlant implements HttpFunction {
         try {
             logger.info("Generating analysis with Gemini for text: " + userText);
             GenerateContentResponse response = model.generateContent(fullPrompt);
-            String jsonResponse = response.getCandidates(0).getContent().getParts(0).getText()
-                .replace("```json", "").replace("```", "").trim();
+            String responseText = response.getCandidates(0).getContent().getParts(0).getText();
 
-            logger.info("Generated response from Gemini: " + jsonResponse);
-            GeminiResponse geminiResponse = gson.fromJson(jsonResponse, GeminiResponse.class);
+            // Use regex to find the JSON block, making it more robust
+            Pattern pattern = Pattern.compile("(?s)\\{.*\\}");
+            Matcher matcher = pattern.matcher(responseText);
 
-            // Ensure we have a valid response, otherwise create a fallback
-            if (geminiResponse == null || geminiResponse.imagePrompt == null) {
-                 throw new JsonSyntaxException("Parsed Gemini response is null or lacks an image prompt.");
+            if (matcher.find()) {
+                String jsonResponse = matcher.group(0);
+                logger.info("Extracted JSON response from Gemini: " + jsonResponse);
+                GeminiResponse geminiResponse = gson.fromJson(jsonResponse, GeminiResponse.class);
+
+                if (geminiResponse != null && geminiResponse.imagePrompt() != null) {
+                    return geminiResponse;
+                }
             }
-            return geminiResponse;
+
+            logger.warning("Failed to find or parse a valid JSON object from Gemini response. Using fallback.");
+            throw new Exception("No valid JSON found in Gemini response");
 
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error generating or parsing Gemini response: " + e.getMessage(), e);
@@ -182,11 +207,37 @@ public class GenerateMemoryPlant implements HttpFunction {
         }
     }
 
-    String generateImageWithImagen(String imagePrompt) {
-        logger.info("Generating image with Imagen for prompt: " + imagePrompt);
-        String generatedImageUrl = "https://storage.googleapis.com/cziczere-static-assets/placeholder-plant.png";
-        logger.info("Generated image URL (placeholder): " + generatedImageUrl);
-        return generatedImageUrl;
+    String generateImageWithImagen(String imagePrompt) throws IOException {
+        String endpoint = String.format("%s-aiplatform.googleapis.com:443", REGION);
+        PredictionServiceSettings predictionServiceSettings =
+            PredictionServiceSettings.newBuilder().setEndpoint(endpoint).build();
+
+        try (PredictionServiceClient predictionServiceClient =
+            PredictionServiceClient.create(predictionServiceSettings)) {
+            final EndpointName endpointName =
+                EndpointName.of(PROJECT_ID, REGION, "imagegeneration@006");
+
+            com.google.protobuf.Value.Builder instanceBuilder = com.google.protobuf.Value.newBuilder();
+            JsonFormat.parser().merge("{\"prompt\": \"" + imagePrompt + "\"}", instanceBuilder);
+            List<com.google.protobuf.Value> instances = new ArrayList<>();
+            instances.add(instanceBuilder.build());
+
+            com.google.protobuf.Value.Builder parametersBuilder = com.google.protobuf.Value.newBuilder();
+            JsonFormat.parser().merge("{\"sampleCount\": 1}", parametersBuilder);
+
+            PredictResponse predictResponse =
+                predictionServiceClient.predict(endpointName, instances, parametersBuilder.build());
+
+            String base64Image = predictResponse.getPredictions(0).getStructValue().getFieldsMap().get("bytesBase64Encoded").getStringValue();
+            byte[] imageBytes = Base64.getDecoder().decode(base64Image);
+
+            String blobName = UUID.randomUUID().toString() + ".png";
+            BlobId blobId = BlobId.of(GCS_BUCKET_NAME, blobName);
+            BlobInfo blobInfo = BlobInfo.newBuilder(blobId).setContentType("image/png").build();
+            storage.create(blobInfo, imageBytes);
+
+            return String.format("https://storage.googleapis.com/%s/%s", GCS_BUCKET_NAME, blobName);
+        }
     }
 
     void saveToFirestore(MemoryData data) throws ExecutionException, InterruptedException {

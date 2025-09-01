@@ -10,6 +10,8 @@ export interface MemoryData {
   imagePrompt: string;
   imageUrl: string;
   timestamp: number;
+  type: string;
+  emotions: { [key: string]: number; };
 }
 
 export interface InsightData {

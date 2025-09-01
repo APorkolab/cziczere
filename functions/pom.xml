@@ -40,6 +40,11 @@
       <groupId>com.google.cloud</groupId>
       <artifactId>google-cloud-vertexai</artifactId>
     </dependency>
+    <dependency>
+      <groupId>com.google.cloud</groupId>
+      <artifactId>google-cloud-aiplatform</artifactId>
+      <version>3.73.0</version>
+    </dependency>
 
     <!-- Google Cloud Firestore for database -->
     <dependency>

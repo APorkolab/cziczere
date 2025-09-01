@@ -61,16 +61,17 @@ Ez egy teljesen új, AI-alapú funkció, ami segít a felhasználónak reflektá
 
 ### ## Technológiai Architektúra (AI-First)
 
-* **Backend (Java - Spring Boot):**
-    * Ez a rendszer **központi agya (orchestrator)**. Nemcsak a saját adatbázisát menedzseli, hanem kommunikál a külső AI szolgáltatásokkal.
-    * **Feladata:** Fogadja a nyers emléket, továbbítja az LLM API-nak (pl. **Google AI Platform / Vertex AI**) prompt-generálás céljából, majd az eredményt továbbküldi az Image Generation API-nak. A kapott képet és a metaadatokat menti az adatbázisba.
-    * Kezeli a felhasználói authentikációt (Spring Security) és a WebSocket kapcsolatot a valós idejű frissítésekhez ("Közös Égbolt").
+* **Backend (Java - Google Cloud Functions):**
+    * A rendszer központi agyaként (orchestrator) egy Java alapú Google Cloud Function szolgál.
+    * **Feladata:** Fogadja a nyers emléket, a Firebase Admin SDK segítségével validálja a felhasználói authentikációs tokent, majd a Vertex AI SDK-n keresztül kommunikál a Gemini modellel a prompt generálásához és az érzelmi analízishez. Az eredményül kapott promptot továbbküldi az Imagen API-nak. A generált képet a Cloud Storage-be menti, és a kép URL-jét, valamint a többi metaadatot (emlék, prompt, érzelmek) a Firestore adatbázisba menti.
 * **Frontend (Angular):**
     * Felelős a komplex, AI által generált képek és animációk megjelenítéséért.
-    * **WebGL/Canvas:** A kertet valószínűleg egy WebGL-t használó keretrendszer (pl. **Three.js**) segítségével kell felépíteni, hogy a 2D képeknek mélységet és dinamikát adjon.
+    * **WebGL/Canvas:** A kertet egy WebGL-t használó keretrendszer (pl. **Three.js**) segítségével kell felépíteni, hogy a 2D képeknek mélységet és dinamikát adjon.
     * Kommunikál a backenddel a kert adatainak lekéréséért és az új emlékek elküldéséért.
-* **Adatbázis (PostgreSQL / MongoDB):**
-    * Rugalmasnak kell lennie, hogy tárolja a strukturált felhasználói adatokat, a nyers emlékeket, az AI által generált promptokat és a visszakapott képek URL-jeit.
+* **Adatbázis (Cloud Firestore):**
+    * A strukturált felhasználói adatokat, a nyers emlékeket, az AI által generált promptokat, érzelmeket és a generált képek Cloud Storage URL-jeit tárolja.
+* **Képtárolás (Google Cloud Storage):**
+    * Az Imagen által generált képeket egy Google Cloud Storage bucketben tároljuk, hogy azok publikusan elérhető URL-lel rendelkezzenek.
 
 ### ## A Projekt Célja és Potenciális Fejlődése
 
@@ -82,9 +83,9 @@ Ez egy teljesen új, AI-alapú funkció, ami segít a felhasználónak reflektá
 
 Ez a koncepció egy ambiciózus, de rendkívül izgalmas és releváns projekt, ami tökéletesen ötvözi a technikai tudást a művészi kreativitással.
 
-Igen, a Google Cloud platform tökéletes választás egy ilyen projekthez, mert a szervermentes (serverless) architektúrával és a nagyvonalú ingyenes keretekkel a fejlesztési és alacsony forgalmú időszakban a költségek gyakorlatilag nullán tarthatók.
+A Google Cloud platform tökéletes választás egy ilyen projekthez, mert a szervermentes (serverless) architektúrával és a nagyvonalú ingyenes keretekkel a fejlesztési és alacsony forgalmú időszakban a költségek gyakorlatilag nullán tarthatók.
 
-Íme a teljes terv a "Cziczere" AI-verziójának költséghatékony megvalósítására a Google Cloudon, a részletes AI programlogikával együtt.
+A projekt jelenlegi állapotában a központi AI pipeline megvalósításra került a Google Cloudon.
 
 -----
 
@@ -116,104 +117,23 @@ Ez az architektúra teljesen szervermentes, és a Firebase ökoszisztémára ép
 
 ### \#\# III. Az AI Részletes Programmegvalósítása (Java a Cloud Functionben)
 
-Ez a központi logika, ami a `Cloud Function`-ben fog futni. Amikor a felhasználó elültet egy emléket, az Angular alkalmazás meghívja ezt a HTTPS végpontot.
+A központi logika a `GenerateMemoryPlant` nevű Java Cloud Function-ben valósult meg. A funkció a következő lépéseket hajtja végre, amikor a frontend meghívja:
 
-#### **1. Lépés: Cloud Function Indítása és Adatok Fogadása**
-
-A függvény egy egyszerű HTTPS kérést fogad, ami tartalmazza a felhasználó által beírt szöveget és az authentikációs tokenjét.
-
-```java
-// Cloud Function - Java 17 Runtime
-// FONTOS: Ez egy koncepcionális kód, a pontos SDK használat ettől eltérhet.
-
-import com.google.cloud.functions.HttpFunction;
-import com.google.cloud.functions.HttpRequest;
-import com.google.cloud.functions.HttpResponse;
-import com.google.gson.Gson;
-// ... további importok a Vertex AI és Firestore SDK-kból
-
-public class GenerateMemoryPlant implements HttpFunction {
-    @Override
-    public void service(HttpRequest request, HttpResponse response) throws Exception {
-        // 1. Felhasználói adatok kinyerése a kérésből
-        String userText = new Gson().fromJson(request.getReader(), RequestData.class).getText();
-        String userId = getUserIdFromAuthToken(request); // Firebase Auth token validálása
-
-        // 2. AI Prompt generálása a Gemini modellel
-        String imagePrompt = generateImagePromptWithGemini(userText);
-
-        // 3. Kép generálása az Imagen modellel
-        String imageUrl = generateImageWithImagen(imagePrompt);
-
-        // 4. Eredmény mentése a Firestore adatbázisba
-        MemoryData newMemory = new MemoryData(userId, userText, imagePrompt, imageUrl);
-        saveToFirestore(newMemory);
-
-        // 5. Válasz visszaküldése a frontendnek
-        response.getWriter().write(new Gson().toJson(newMemory));
-        response.setStatusCode(200);
-    }
-}
-```
-
-#### **🧠 2. Lépés: Szövegelemzés és Prompt Generálás (Gemini)**
-
-Ez a `generateImagePromptWithGemini` függvény logikája. A Vertex AI Java SDK-t használja.
-
-```java
-private String generateImagePromptWithGemini(String userText) throws Exception {
-    // Vertex AI kliens inicializálása
-    try (VertexAI vertexAI = new VertexAI("your-gcp-project-id", "your-region")) {
-        GenerativeModel model = new GenerativeModel("gemini-1.5-flash-001", vertexAI);
-
-        // A Prompt Engineering kulcsfontosságú!
-        // Egyértelmű utasításokat adunk a modellnek.
-        String systemPrompt = "Te egy kreatív asszisztens vagy. A felhasználó szövege alapján generálj egy angol nyelvű, " +
-                              "művészi promptot egy képgeneráló AI számára. A prompt legyen leíró, érzelemgazdag és vizuális. " +
-                              "Stílus: 'digital painting, surreal, magical realism, glowing elements'. " +
-                              "Koncentrálj a következőkre: fő téma, hangulat, színek. Ne adj hozzá semmi mást, csak a promptot.";
-
-        String fullPrompt = systemPrompt + "\nFelhasználó szövege: \"" + userText + "\"";
-
-        // API hívás
-        GenerateContentResponse response = model.generateContent(fullPrompt);
-        String generatedPrompt = response.getCandidates(0).getContent().getParts(0).getText();
-
-        return generatedPrompt.trim();
-    }
-}
-```
-
-#### **🎨 3. Lépés: Képgenerálás (Imagen)**
-
-A `generateImageWithImagen` függvény az előző lépés eredményét használja fel.
-
-```java
-private String generateImageWithImagen(String imagePrompt) throws Exception {
-    // Az Imagen SDK használata hasonló a Gemini-hez.
-    // A kliensnek átadjuk a generált promptot.
-    // A válasz egy vagy több kép URL-jét tartalmazza, amik ideiglenesen
-    // a Cloud Storage-ben jönnek létre. Ezt az URL-t adjuk vissza.
-
-    // ... Imagen API hívás logikája ...
-    // A válasz egy URL lesz, pl. "https://storage.googleapis.com/..."
-    String generatedImageUrl = "https://path.to.generated/image.png"; // Placeholder
-    return generatedImageUrl;
-}
-```
-
-#### **💾 4. Lépés: Adatmentés Firestore-ba**
-
-A `saveToFirestore` függvény egy új dokumentumot hoz létre a `memories` kollekcióban.
-
-```java
-private void saveToFirestore(MemoryData data) throws Exception {
-    Firestore db = FirestoreOptions.getDefaultInstance().getService();
-    // Új dokumentum hozzáadása egyedi ID-val
-    ApiFuture<WriteResult> future = db.collection("memories").document().set(data);
-    future.get(); // Várakozás a sikeres írásra
-}
-```
+1.  **Felhasználói Hitelesítés:** A `Authorization: Bearer <token>` headerből kiolvassa a Firebase ID tokent, és a Firebase Admin SDK segítségével validálja azt. Sikertelen validáció esetén 401-es hibával tér vissza.
+2.  **Adatok Fogadása:** A kérés törzséből kiolvassa a felhasználó által beküldött szöveges emléket.
+3.  **Szövegelemzés és Prompt Generálás (Gemini):**
+    *   A `gemini-1.5-flash-001` modellt használja a Vertex AI Java SDK-n keresztül.
+    *   Egy előre definiált "system prompt" segítségével utasítja a modellt, hogy a felhasználói szövegből generáljon egy képgeneráláshoz használható, angol nyelvű, művészi promptot, valamint egy listát azonosított érzelmekről és azok erősségéről.
+    *   A modell válaszát JSON objektumként kéri, majd egy reguláris kifejezéssel biztosítja a válasz robusztus feldolgozását.
+4.  **Képgenerálás (Imagen) és Tárolás (Cloud Storage):**
+    *   A Gemini által generált promptot átadja az `imagegeneration@006` Imagen modellnek a Vertex AI `PredictionServiceClient` segítségével.
+    *   A modell a képet Base64 kódolású stringként adja vissza.
+    *   A függvény dekódolja a Base64 stringet, és az így kapott képbájtokat elmenti egy Google Cloud Storage bucketbe egy egyedi, UUID-alapú néven.
+    *   Visszaadja a feltöltött kép publikus URL-jét.
+5.  **Adatmentés Firestore-ba:**
+    *   Az összes generált adatot (felhasználói ID, eredeti szöveg, kép prompt, kép URL, időbélyeg, érzelmek) egy `MemoryData` objektumba menti.
+    *   Ezt az objektumot egy új dokumentumként elmenti a `memories` nevű Firestore kollekcióba.
+6.  **Válasz a Frontendnek:** A teljes `MemoryData` objektumot JSON formátumban visszaküldi a frontendnek, jelezve a sikeres műveletet.
 
 -----
 
