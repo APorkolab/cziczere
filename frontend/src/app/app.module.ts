@@ -12,6 +12,7 @@ import { environment } from '../environments/environment';
 import { MemoryCreateComponent } from './memory-create/memory-create.component';
 import { GardenCanvasComponent } from './garden-canvas/garden-canvas.component';
 import { InsightDisplayComponent } from './insight-display/insight-display.component';
+import { ArViewComponent } from './ar-view/ar-view.component';
 
 @NgModule({
   declarations: [
@@ -22,6 +23,7 @@ import { InsightDisplayComponent } from './insight-display/insight-display.compo
   ],
   imports: [
     BrowserModule,
+    ArViewComponent,
     ReactiveFormsModule,
     HttpClientModule,
     provideFirebaseApp(() => initializeApp(environment.firebase)),

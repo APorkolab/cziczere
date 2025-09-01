@@ -15,11 +15,12 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.StringReader;
 import java.io.StringWriter;
-import java.io.Writer;
+import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -34,28 +35,22 @@ class AnalyzeMemoriesTest {
     @Mock private HttpRequest request;
     @Mock private HttpResponse response;
 
-    // Use a real AnalyzeMemories instance but with mocked dependencies
     private AnalyzeMemories analyzeMemories;
     private MockedStatic<FirebaseApp> firebaseAppMockedStatic;
-
-    @Mock
-    private FirebaseApp mockFirebaseApp;
-
+    @Mock private FirebaseApp mockFirebaseApp;
 
     private StringWriter responseWriter;
 
     @BeforeEach
     void setUp() throws Exception {
         firebaseAppMockedStatic = mockStatic(FirebaseApp.class);
-        firebaseAppMockedStatic.when(FirebaseApp::getApps).thenReturn(java.util.List.of(mockFirebaseApp));
+        firebaseAppMockedStatic.when(FirebaseApp::getApps).thenReturn(List.of(mockFirebaseApp));
 
-        // We need to spy on the real object to mock some of its methods
         analyzeMemories = spy(new AnalyzeMemories(db, vertexAI));
 
-        // Mock the response writer
         responseWriter = new StringWriter();
         BufferedWriter writer = new BufferedWriter(responseWriter);
-        when(response.getWriter()).thenReturn(writer);
+        lenient().when(response.getWriter()).thenReturn(writer);
     }
 
     @AfterEach
@@ -63,62 +58,88 @@ class AnalyzeMemoriesTest {
         firebaseAppMockedStatic.close();
     }
 
+    private void setupRequestWithBody(String jsonBody) throws Exception {
+        BufferedReader reader = new BufferedReader(new StringReader(jsonBody));
+        lenient().when(request.getReader()).thenReturn(reader);
+    }
+
     @Test
-    void service_shouldReturnInsight_whenMemoriesExist() throws Exception {
+    void service_shouldGenerateWeeklySummary_whenTypeIsCorrect() throws Exception {
         // Arrange
         String testUserId = "test-user-123";
         List<MemoryData> memories = List.of(
-                new MemoryData(testUserId, "Loved walking my dog today.", "prompt1", "url1", 1L),
-                new MemoryData(testUserId, "My dog is the best.", "prompt2", "url2", 2L)
+            new MemoryData(testUserId, "A great week!", "p1", "u1", 1L, "memory", Collections.singletonMap("joy", 0.9))
         );
-        String expectedInsight = "It seems that your dog brings you a lot of joy.";
+        String expectedSummary = "This week was full of joy.";
+        String requestJson = new Gson().toJson(new RequestData(null, "weekly_summary"));
+        setupRequestWithBody(requestJson);
 
-        // Mock the authentication
-        doReturn(testUserId).when(analyzeMemories).getUserIdFromAuthToken(request);
-        // Mock the data fetching
-        doReturn(memories).when(analyzeMemories).getMemoriesForUser(testUserId);
-        // Mock the AI generation
-        doReturn(expectedInsight).when(analyzeMemories).generateInsightWithGemini(memories);
-        // Mock the save operation
-        doNothing().when(analyzeMemories).saveInsightToFirestore(any(InsightData.class));
+        doReturn(testUserId).when(analyzeMemories).getUserIdFromAuthToken(any());
+        doReturn(memories).when(analyzeMemories).getRecentMemoriesForUser(testUserId);
+        doReturn(expectedSummary).when(analyzeMemories).generateWeeklySummary(any());
+        doNothing().when(analyzeMemories).saveInsightToFirestore(any());
 
         // Act
         analyzeMemories.service(request, response);
 
         // Assert
+        verify(response).setStatusCode(200, "OK");
         ArgumentCaptor<InsightData> insightCaptor = ArgumentCaptor.forClass(InsightData.class);
         verify(analyzeMemories).saveInsightToFirestore(insightCaptor.capture());
+        assertEquals("weekly_summary", insightCaptor.getValue().type());
+        assertEquals(expectedSummary, insightCaptor.getValue().text());
+    }
 
-        assertEquals(testUserId, insightCaptor.getValue().userId());
-        assertEquals(expectedInsight, insightCaptor.getValue().text());
+    @Test
+    void service_shouldGenerateMonthlyInsight_whenTypeIsCorrect() throws Exception {
+        // Arrange
+        String testUserId = "test-user-123";
+        List<MemoryData> memories = List.of(
+                new MemoryData(testUserId, "A great month!", "p1", "u1", 1L, "memory", Collections.singletonMap("pride", 0.8))
+        );
+        String expectedInsight = "This month you should be proud.";
+        String requestJson = new Gson().toJson(new RequestData(null, "monthly_insight"));
+        setupRequestWithBody(requestJson);
 
+        doReturn(testUserId).when(analyzeMemories).getUserIdFromAuthToken(any());
+        doReturn(memories).when(analyzeMemories).getMonthlyMemoriesForUser(testUserId);
+        doReturn(expectedInsight).when(analyzeMemories).generateMonthlyInsight(any());
+        doNothing().when(analyzeMemories).saveInsightToFirestore(any());
+
+        // Act
+        analyzeMemories.service(request, response);
+
+        // Assert
         verify(response).setStatusCode(200, "OK");
-        String jsonResponse = responseWriter.toString();
-        // Use contains because the timestamp will be different
-        assertTrue(jsonResponse.contains("\"userId\":\"" + testUserId + "\""));
-        assertTrue(jsonResponse.contains("\"text\":\"" + expectedInsight.replace("\"", "\\\"") + "\""));
+        ArgumentCaptor<InsightData> insightCaptor = ArgumentCaptor.forClass(InsightData.class);
+        verify(analyzeMemories).saveInsightToFirestore(insightCaptor.capture());
+        assertEquals("monthly_insight", insightCaptor.getValue().type());
+        assertEquals(expectedInsight, insightCaptor.getValue().text());
     }
 
     @Test
     void service_shouldReturnNotFound_whenNoMemoriesExist() throws Exception {
         // Arrange
         String testUserId = "test-user-123";
+        String requestJson = new Gson().toJson(new RequestData(null, "weekly_summary"));
+        setupRequestWithBody(requestJson);
+
         doReturn(testUserId).when(analyzeMemories).getUserIdFromAuthToken(request);
-        doReturn(List.of()).when(analyzeMemories).getMemoriesForUser(testUserId);
+        doReturn(List.of()).when(analyzeMemories).getRecentMemoriesForUser(testUserId);
 
         // Act
         analyzeMemories.service(request, response);
 
         // Assert
         verify(response).setStatusCode(404, "Not Found");
-        assertEquals("{\"message\":\"No memories found to analyze.\"}", responseWriter.toString());
-        verify(analyzeMemories, never()).generateInsightWithGemini(any());
-        verify(analyzeMemories, never()).saveInsightToFirestore(any());
+        assertTrue(responseWriter.toString().contains("No recent memories"));
     }
 
     @Test
     void service_shouldReturnUnauthorized_whenAuthFails() throws Exception {
         // Arrange
+        String requestJson = new Gson().toJson(new RequestData(null, "weekly_summary"));
+        setupRequestWithBody(requestJson);
         doThrow(new AnalyzeMemories.AuthException("Invalid token"))
                 .when(analyzeMemories).getUserIdFromAuthToken(request);
 

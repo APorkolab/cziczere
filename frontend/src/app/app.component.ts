@@ -19,6 +19,8 @@ export class AppComponent {
   public latestMemory$ = new BehaviorSubject<MemoryData | null>(null);
   public isLoading$ = new BehaviorSubject<boolean>(false);
   public isInsightLoading$ = new BehaviorSubject<boolean>(false);
+  public isExporting$ = new BehaviorSubject<boolean>(false);
+  public isArViewVisible = false;
 
   constructor() {
     this.memories$ = this.api.getMemories();
@@ -67,5 +69,34 @@ export class AppComponent {
 
   logout() {
     signOut(this.auth);
+  }
+
+  onMemoryClicked(memory: MemoryData) {
+    console.log('Memory clicked:', memory);
+    alert(`Memory: "${memory.userText}"`);
+  }
+
+  onExportPoster() {
+    this.isExporting$.next(true);
+    this.api.exportGardenAsPoster().subscribe({
+      next: (response) => {
+        const link = document.createElement('a');
+        link.href = `data:image/png;base64,${response.base64Image}`;
+        link.download = `cziczere-garden-poster-${new Date().toISOString()}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        this.isExporting$.next(false);
+      },
+      error: (err) => {
+        console.error('Error exporting poster:', err);
+        alert('There was an error exporting your poster. Please check the console.');
+        this.isExporting$.next(false);
+      }
+    });
+  }
+
+  toggleArView(): void {
+    this.isArViewVisible = !this.isArViewVisible;
   }
 }

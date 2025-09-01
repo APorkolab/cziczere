@@ -3,6 +3,7 @@
     <h1>🌱 Cziczere: The Digital Memory Garden</h1>
     <ng-container *ngIf="user | async as currentUser; else showLogin">
       <div class="user-info">
+        <button (click)="toggleArView()">Enter AR Mode</button>
         <span>Welcome, {{ currentUser.displayName }}!</span>
         <button (click)="logout()">Logout</button>
       </div>
@@ -34,6 +35,16 @@
           The Gardener is reflecting...
         </ng-template>
       </button>
+
+      <button (click)="onExportPoster()" [disabled]="isExporting$ | async">
+        <ng-container *ngIf="!(isExporting$ | async); else exporting">
+          Export Garden as Poster
+        </ng-container>
+        <ng-template #exporting>
+          <div class="spinner-small"></div>
+          Exporting...
+        </ng-template>
+      </button>
     </div>
 
     <app-insight-display [insight]="latestInsight$ | async"></app-insight-display>
@@ -44,3 +55,5 @@
     <p>Please log in to cultivate your memory garden.</p>
   </div>
 </div>
+
+<app-ar-view *ngIf="isArViewVisible"></app-ar-view>

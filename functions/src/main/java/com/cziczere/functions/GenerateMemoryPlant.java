@@ -10,9 +10,16 @@ import com.google.cloud.vertexai.api.GenerateContentResponse;
 import com.google.cloud.vertexai.generativeai.GenerativeModel;
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
+import com.google.gson.JsonSyntaxException;
+import com.google.protobuf.Value;
+import com.google.protobuf.util.JsonFormat;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Logger;
 
@@ -27,7 +34,25 @@ public class GenerateMemoryPlant implements HttpFunction {
     private final Firestore db;
     private final VertexAI vertexAI;
 
-    // This constructor is used by the Cloud Functions framework.
+    // A record to hold the structured response from Gemini.
+    record GeminiResponse(String imagePrompt, Map<String, Double> emotions) {}
+
+    static {
+        try {
+            if (FirebaseApp.getApps().isEmpty()) {
+                GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
+                FirebaseOptions options = FirebaseOptions.builder()
+                    .setCredentials(credentials)
+                    .setProjectId(PROJECT_ID)
+                    .build();
+                FirebaseApp.initializeApp(options);
+                logger.info("Firebase Admin SDK initialized successfully.");
+            }
+        } catch (IOException e) {
+            logger.log(Level.SEVERE, "Firebase Admin SDK initialization failed.", e);
+        }
+    }
+
     public GenerateMemoryPlant() throws IOException {
         this.db = FirestoreOptions.getDefaultInstance().getService();
         this.vertexAI = new VertexAI(PROJECT_ID, REGION);
@@ -54,10 +79,18 @@ public class GenerateMemoryPlant implements HttpFunction {
                 String userText = requestData.text();
                 String userId = getUserIdFromAuthToken(request);
 
-                String imagePrompt = generateImagePromptWithGemini(userText);
-                String imageUrl = generateImageWithImagen(imagePrompt);
+                GeminiResponse geminiResponse = generateAnalysisWithGemini(userText);
+                String imageUrl = generateImageWithImagen(geminiResponse.imagePrompt());
 
-                MemoryData newMemory = new MemoryData(userId, userText, imagePrompt, imageUrl, System.currentTimeMillis());
+                MemoryData newMemory = new MemoryData(
+                    userId,
+                    userText,
+                    geminiResponse.imagePrompt(),
+                    imageUrl,
+                    System.currentTimeMillis(),
+                    "memory",
+                    geminiResponse.emotions()
+                );
                 saveToFirestore(newMemory);
 
                 response.setStatusCode(200, "OK");
@@ -79,23 +112,38 @@ public class GenerateMemoryPlant implements HttpFunction {
         return "static-user-id-for-testing";
     }
 
-    String generateImagePromptWithGemini(String userText) throws IOException {
-        GenerativeModel model = new GenerativeModel("gemini-1.5-flash-001", this.vertexAI);
-        String systemPrompt = "You are a creative assistant. Based on the user's text, generate an English, " +
-                "artistic prompt for an image generation AI. The prompt should be descriptive, emotional, and visual. " +
-                "Style: 'digital painting, surreal, magical realism, glowing elements'. " +
-                "Focus on: main theme, mood, colors. Output only the prompt and nothing else.";
+    GeminiResponse generateAnalysisWithGemini(String userText) throws IOException {
+        GenerativeModel model = getGenerativeModel();
+        String systemPrompt = "You are a creative and analytical assistant. Based on the user's text, perform two tasks: " +
+            "1. Generate an English, artistic prompt for an image generation AI. The prompt should be descriptive, emotional, and visual. " +
+            "Style: 'digital painting, surreal, magical realism, glowing elements'. " +
+            "2. Analyze the text for nuanced emotions. Identify up to 5 key emotions and provide a score from 0.0 to 1.0. " +
+            "Your output MUST be a valid JSON object with two keys: 'imagePrompt' (string) and 'emotions' (a map of emotion names to scores). " +
+            "For example: {\"imagePrompt\": \"...\", \"emotions\": {\"nostalgia\": 0.8, \"joy\": 0.6}}. " +
+            "Do not output anything else, just the raw JSON.";
+
         String fullPrompt = systemPrompt + "\nUser's text: \"" + userText + "\"";
 
         try {
-            logger.info("Generating prompt with Gemini for text: " + userText);
+            logger.info("Generating analysis with Gemini for text: " + userText);
             GenerateContentResponse response = model.generateContent(fullPrompt);
-            String generatedPrompt = response.getCandidates(0).getContent().getParts(0).getText();
-            logger.info("Generated prompt: " + generatedPrompt);
-            return generatedPrompt.trim();
+            String jsonResponse = response.getCandidates(0).getContent().getParts(0).getText()
+                .replace("```json", "").replace("```", "").trim();
+
+            logger.info("Generated response from Gemini: " + jsonResponse);
+            GeminiResponse geminiResponse = gson.fromJson(jsonResponse, GeminiResponse.class);
+
+            // Ensure we have a valid response, otherwise create a fallback
+            if (geminiResponse == null || geminiResponse.imagePrompt == null) {
+                 throw new JsonSyntaxException("Parsed Gemini response is null or lacks an image prompt.");
+            }
+            return geminiResponse;
+
         } catch (Exception e) {
-            logger.severe("Error generating prompt with Gemini: " + e.getMessage());
-            return String.format("A beautiful digital painting of %s, magical realism style.", userText);
+            logger.log(Level.SEVERE, "Error generating or parsing Gemini response: " + e.getMessage(), e);
+            // Fallback in case of any error
+            String fallbackPrompt = String.format("A beautiful digital painting of %s, magical realism style.", userText);
+            return new GeminiResponse(fallbackPrompt, Collections.singletonMap("unknown", 0.5));
         }
     }
 
@@ -110,5 +158,13 @@ public class GenerateMemoryPlant implements HttpFunction {
         logger.info("Saving memory data to Firestore collection 'memories': " + data);
         db.collection("memories").document().set(data).get();
         logger.info("Successfully saved data to Firestore.");
+    }
+
+    /**
+     * Factory method for creating a GenerativeModel.
+     * This is to allow for easier mocking in tests.
+     */
+    GenerativeModel getGenerativeModel() throws IOException {
+        return new GenerativeModel("gemini-1.5-flash-001", this.vertexAI);
     }
 }

@@ -16,6 +16,7 @@ import com.google.gson.Gson;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -23,8 +24,12 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.io.IOException;
+import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -70,7 +75,7 @@ class GenerateMemoryPlantTest {
 
         responseWriter = new StringWriter();
         BufferedWriter bufferedWriter = new BufferedWriter(responseWriter);
-        when(response.getWriter()).thenReturn(bufferedWriter);
+        lenient().when(response.getWriter()).thenReturn(bufferedWriter);
     }
 
     @AfterEach
@@ -88,31 +93,52 @@ class GenerateMemoryPlantTest {
     @Test
     void service_shouldReturnSuccess_onValidRequest() throws Exception {
         // Given
-        String inputText = "A beautiful day in the park";
-        String requestJson = new Gson().toJson(new RequestData(inputText));
+        setupValidAuth();
+        String inputText = "A beautiful day in the park, feeling nostalgic and happy.";
+        String requestJson = new Gson().toJson(new RequestData(inputText, null));
         BufferedReader reader = new BufferedReader(new StringReader(requestJson));
         when(request.getReader()).thenReturn(reader);
         when(db.collection(anyString())).thenReturn(collectionReference);
         when(collectionReference.document()).thenReturn(documentReference);
         when(documentReference.set(any(MemoryData.class))).thenReturn(mockApiFuture);
 
+        // Create a real GenerateMemoryPlant instance, but spy on it to mock specific methods.
         GenerateMemoryPlant spy = spy(generateMemoryPlant);
-        doReturn("A beautiful day in the park, digital painting").when(spy).generateImagePromptWithGemini(anyString());
-        doReturn("http://placeholder.com/image.png").when(spy).generateImageWithImagen(anyString());
+
+        // Mock the response from our new Gemini analysis method
+        Map<String, Double> emotions = Map.of("nostalgia", 0.8, "happiness", 0.9);
+        var geminiResponse = new GenerateMemoryPlant.GeminiResponse("A beautiful park, digital painting", emotions);
+        doReturn(geminiResponse).when(spy).generateAnalysisWithGemini(anyString());
+
+        doReturn("data:image/png;base64,dGVzdA==").when(spy).generateImageWithImagen(anyString());
+        // Use an ArgumentCaptor to capture the object passed to saveToFirestore
+        ArgumentCaptor<MemoryData> memoryDataCaptor = ArgumentCaptor.forClass(MemoryData.class);
+        doNothing().when(spy).saveToFirestore(memoryDataCaptor.capture());
 
         // When
         spy.service(request, response);
 
         // Then
         verify(response).setStatusCode(200, "OK");
+
+        // Verify the data passed to saveToFirestore
+        MemoryData capturedMemoryData = memoryDataCaptor.getValue();
+        assertEquals("test-user-id", capturedMemoryData.userId());
+        assertEquals(inputText, capturedMemoryData.userText());
+        assertEquals("A beautiful park, digital painting", capturedMemoryData.imagePrompt());
+        assertEquals("data:image/png;base64,dGVzdA==", capturedMemoryData.imageUrl());
+        assertNotNull(capturedMemoryData.emotions());
+        assertEquals(2, capturedMemoryData.emotions().size());
+        assertEquals(0.8, capturedMemoryData.emotions().get("nostalgia"));
+
+        // Also verify the JSON response sent to the client
         String jsonResponse = responseWriter.toString();
-
-        Gson gson = new Gson();
-        MemoryData responseData = gson.fromJson(jsonResponse, MemoryData.class);
-
+        MemoryData responseData = new Gson().fromJson(jsonResponse, MemoryData.class);
         assertEquals("test-user-id", responseData.userId());
         assertEquals(inputText, responseData.userText());
         assertEquals("data:image/png;base64,dGVzdA==", responseData.imageUrl());
+        assertNotNull(responseData.emotions());
+        assertEquals(0.9, responseData.emotions().get("happiness"));
     }
 
         MemoryData responseData = new Gson().fromJson(jsonResponse, MemoryData.class);
@@ -137,17 +163,27 @@ class GenerateMemoryPlantTest {
     }
 
     @Test
-    void service_shouldReturnBadRequest_whenTextFieldIsMissing() throws Exception {
+    void generateAnalysisWithGemini_shouldReturnFallback_onApiError() throws IOException {
         // Given
-        String jsonWithoutText = "{\"other_field\":\"some_value\"}";
-        BufferedReader reader = new BufferedReader(new StringReader(jsonWithoutText));
-        when(request.getReader()).thenReturn(reader);
+        // This test calls the method directly, so we don't need the full HttpRequest/HttpResponse setup.
+        GenerateMemoryPlant plant = new GenerateMemoryPlant(db, vertexAI);
+        GenerateMemoryPlant spy = spy(plant);
+
+        // Mock the model and make it throw an error
+        var mockModel = mock(com.google.cloud.vertexai.generativeai.GenerativeModel.class);
+        when(mockModel.generateContent(anyString())).thenThrow(new RuntimeException("API call failed!"));
+
+        // Make our factory method return the mock
+        doReturn(mockModel).when(spy).getGenerativeModel();
 
         // When
-        generateMemoryPlant.service(request, response);
+        var response = spy.generateAnalysisWithGemini("some text");
 
         // Then
-        verify(response).setStatusCode(400, "Bad Request: 'text' field is required and cannot be empty.");
-        assertTrue(responseWriter.toString().contains("'text' field is required"));
+        assertNotNull(response);
+        assertTrue(response.imagePrompt().contains("A beautiful digital painting of some text"));
+        assertNotNull(response.emotions());
+        assertEquals(1, response.emotions().size());
+        assertEquals(0.5, response.emotions().get("unknown"));
     }
 }

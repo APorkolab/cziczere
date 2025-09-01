@@ -18,6 +18,10 @@ export interface InsightData {
   timestamp: number;
 }
 
+export interface PosterResponse {
+  base64Image: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -28,7 +32,22 @@ export class ApiService {
   // TODO: Replace with the actual URL of your deployed Cloud Function.
   private generateFunctionUrl = 'http://127.0.0.1:5001/cziczere-ai/us-central1/generateMemoryPlant';
   private analyzeFunctionUrl = 'http://127.0.0.1:5001/cziczere-ai/us-central1/analyzeMemories';
+  private atmosphereFunctionUrl = 'http://127.0.0.1:5001/cziczere-ai/us-central1/getAtmosphere';
+  private exportGardenFunctionUrl = 'http://127.0.0.1:5001/cziczere-ai/us-central1/exportGarden';
 
+
+  exportGardenAsPoster(): Observable<PosterResponse> {
+    return idToken(this.auth).pipe(
+      first(),
+      switchMap(token => {
+        if (!token) {
+          throw new Error('User not logged in!');
+        }
+        const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+        return this.http.post<PosterResponse>(this.exportGardenFunctionUrl, {}, { headers });
+      })
+    );
+  }
 
   createMemory(text: string): Observable<MemoryData> {
     return idToken(this.auth).pipe(

@@ -1,0 +1,24 @@
+.ar-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+}
+
+/* The ARButton from Three.js will be appended here.
+   We can style it if needed, but its default styles are usually sufficient. */
+#ARButton {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 24px;
+  border-radius: 4px;
+  background-color: #007bff;
+  color: white;
+  font-size: 16px;
+  border: none;
+  cursor: pointer;
+}

@@ -1,36 +1,78 @@
-.insight-container {
-  border: 1px solid #ccc;
-  padding: 1rem;
-  margin: 1rem;
-  border-radius: 8px;
+:host {
+  display: block;
+  width: 100%;
+  max-width: 600px;
+  margin: 2rem auto;
+}
+
+.container {
   background-color: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
   text-align: center;
 }
 
-.insight-container.reminder {
-  background-color: #e8f5e9; /* A light green to distinguish reminders */
+.insight-card {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background-color: #ffffff;
+  border-left: 5px solid #4CAF50; /* Green for standard insight */
+  border-radius: 4px;
 }
 
-.insight-content {
+.insight-card.insight-weekly_summary {
+  border-left-color: #2196F3; /* Blue for weekly */
+}
+
+.insight-card.insight-monthly_insight {
+  border-left-color: #9C27B0; /* Purple for monthly */
+}
+
+.insight-header {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
 }
 
-.gardener-icon {
-  font-size: 2rem;
+.icon {
+  font-size: 1.5rem;
 }
 
-.insight-text {
-  font-style: italic;
+.title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
   color: #333;
 }
 
-.collage-image {
-  max-width: 100%;
-  height: auto;
+.text {
+  font-style: italic;
+  color: #555;
+  margin: 0;
+  text-align: left;
+  line-height: 1.6;
+}
+
+.actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+button {
+  background-color: #4a4a4a;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
   border-radius: 4px;
-  margin-bottom: 1rem;
-  border: 1px solid #ddd;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s ease-in-out;
+}
+
+button:hover {
+  background-color: #6a6a6a;
 }

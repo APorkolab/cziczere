@@ -172,7 +172,7 @@ public class AnalyzeMemories implements HttpFunction {
     }
 
 
-    private String generateStandardInsight(List<MemoryData> memories) throws IOException {
+    String generateStandardInsight(List<MemoryData> memories) throws IOException {
         String combinedMemories = memories.stream()
                 .map(MemoryData::userText)
                 .collect(Collectors.joining("\n---\n"));
@@ -204,15 +204,16 @@ public class AnalyzeMemories implements HttpFunction {
         }
     }
 
-    private String generateWeeklySummary(List<MemoryData> memories) throws IOException {
+    String generateWeeklySummary(List<MemoryData> memories) throws IOException {
         String combinedMemories = memories.stream()
-                .map(MemoryData::userText)
+                .map(m -> "Memory: " + m.userText() + "\nEmotions: " + gson.toJson(m.emotions()))
                 .collect(Collectors.joining("\n---\n"));
 
         GenerativeModel model = new GenerativeModel("gemini-1.5-flash-001", this.vertexAI);
-        String systemPrompt = "You are the Gardener's Assistant. You will be given a list of a user's memories from the past week. " +
+        String systemPrompt = "You are the Gardener's Assistant. You will be given a list of a user's memories and associated emotions from the past week. " +
                 "Your task is to create a 'memory bouquet' (emlék-csokor). " +
                 "This should be a short, poetic, and uplifting summary of the week's highlights and feelings. " +
+                "Explicitly use the provided emotion data to add depth to your summary. " +
                 "Weave together the key themes and emotions into a cohesive, gentle, and beautiful paragraph. " +
                 "Address the user in a warm and personal tone. Start with a phrase like 'Here is your weekly bouquet of memories...' or similar. " +
                 "The summary should be in English.";
@@ -231,16 +232,15 @@ public class AnalyzeMemories implements HttpFunction {
         }
     }
 
-    private String generateMonthlyInsight(List<MemoryData> memories) throws IOException {
-        // TODO: Include mood in the prompt once it's available in MemoryData
+    String generateMonthlyInsight(List<MemoryData> memories) throws IOException {
         String combinedMemories = memories.stream()
-                .map(MemoryData::userText)
+                .map(m -> "Memory: " + m.userText() + "\nEmotions: " + gson.toJson(m.emotions()))
                 .collect(Collectors.joining("\n---\n"));
 
         GenerativeModel model = new GenerativeModel("gemini-1.5-flash-001", this.vertexAI);
         String systemPrompt = "You are the Gardener's Assistant, a reflective and insightful AI. " +
-                "You will be given a list of a user's memories and their associated moods from the past month. " +
-                "Your task is to identify deep, overarching patterns, shifts in mood, or recurring themes that might not be obvious week-to-week. " +
+                "You will be given a list of a user's memories and their associated emotions from the past month. " +
+                "Your task is to identify deep, overarching patterns, shifts in emotion, or recurring themes that might not be obvious week-to-week. " +
                 "Synthesize your observations into a thoughtful, multi-sentence paragraph that offers a kind and supportive long-term reflection. " +
                 "Address the user directly. Start with a phrase that acknowledges the longer time frame, like 'Looking back on the past month...'. " +
                 "Your insight should be more profound than a simple summary. " +
@@ -267,7 +267,7 @@ public class AnalyzeMemories implements HttpFunction {
         logger.info("Successfully saved insight to Firestore.");
     }
 
-    private List<MemoryData> getRecentMemoriesForUser(String userId) throws ExecutionException, InterruptedException {
+    List<MemoryData> getRecentMemoriesForUser(String userId) throws ExecutionException, InterruptedException {
         CollectionReference memoriesCollection = db.collection("memories");
         long sevenDaysAgo = System.currentTimeMillis() - (7 * 24 * 60 * 60 * 1000);
         Query query = memoriesCollection
@@ -280,7 +280,7 @@ public class AnalyzeMemories implements HttpFunction {
                 .collect(Collectors.toList());
     }
 
-    private List<MemoryData> getMonthlyMemoriesForUser(String userId) throws ExecutionException, InterruptedException {
+    List<MemoryData> getMonthlyMemoriesForUser(String userId) throws ExecutionException, InterruptedException {
         CollectionReference memoriesCollection = db.collection("memories");
         long thirtyDaysAgo = System.currentTimeMillis() - (30L * 24 * 60 * 60 * 1000);
         Query query = memoriesCollection
