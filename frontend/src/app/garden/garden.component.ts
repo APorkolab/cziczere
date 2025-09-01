@@ -14,7 +14,6 @@ import { CommonModule } from '@angular/common';
 })
 export class GardenComponent implements AfterViewInit {
   @ViewChild('canvas') private canvasRef!: ElementRef;
-  @ViewChild('audioPlayer') private audioPlayerRef!: ElementRef<HTMLAudioElement>;
   @Input() memories: MemoryData[] = [];
   @Output() memoryClicked = new EventEmitter<MemoryData>();
 
@@ -49,16 +48,6 @@ export class GardenComponent implements AfterViewInit {
         this.scene.background = new THREE.Color(data.backgroundColor);
         // TODO: Implement weather effects based on data.weather
         console.log('Atmosphere data:', data);
-
-        // Play music
-        if (data.musicUrl) {
-          const audioPlayer = this.audioPlayerRef.nativeElement;
-          audioPlayer.src = data.musicUrl;
-          audioPlayer.play().catch(error => {
-            console.warn("Audio autoplay was prevented by the browser.", error);
-            // We could show a "Click to play music" button here if needed.
-          });
-        }
       },
       (error) => {
         console.error('Error getting atmosphere:', error);

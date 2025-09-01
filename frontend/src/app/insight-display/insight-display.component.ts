@@ -11,9 +11,13 @@ import { CommonModule } from '@angular/common';
 })
 export class InsightDisplayComponent {
   @Input() insight: InsightData | null = null;
-  @Output() requestSummary = new EventEmitter<void>();
+  @Output() requestInsight = new EventEmitter<'weekly_summary' | 'monthly_insight'>();
 
   requestWeeklySummary(): void {
-    this.requestSummary.emit();
+    this.requestInsight.emit('weekly_summary');
+  }
+
+  requestMonthlyInsight(): void {
+    this.requestInsight.emit('monthly_insight');
   }
 }

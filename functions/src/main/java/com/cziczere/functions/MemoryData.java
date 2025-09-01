@@ -6,7 +6,6 @@ public record MemoryData(
         String imagePrompt,
         String imageUrl,
         long timestamp,
-        String type,
-        String mood
+        String type
 ) {
 }

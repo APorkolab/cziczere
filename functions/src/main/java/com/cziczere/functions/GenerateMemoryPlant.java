@@ -92,9 +92,8 @@ public class GenerateMemoryPlant implements HttpFunction {
 
                 String imagePrompt = generateImagePromptWithGemini(userText);
                 String imageUrl = generateImageWithImagen(imagePrompt);
-                String mood = generateMoodWithGemini(userText);
 
-                MemoryData newMemory = new MemoryData(userId, userText, imagePrompt, imageUrl, System.currentTimeMillis(), "memory", mood);
+                MemoryData newMemory = new MemoryData(userId, userText, imagePrompt, imageUrl, System.currentTimeMillis(), "memory");
                 saveToFirestore(newMemory);
 
                 response.setStatusCode(200, "OK");
@@ -148,26 +147,6 @@ public class GenerateMemoryPlant implements HttpFunction {
         } catch (Exception e) {
             logger.severe("Error generating prompt with Gemini: " + e.getMessage());
             return String.format("A beautiful digital painting of %s, magical realism style.", userText);
-        }
-    }
-
-    String generateMoodWithGemini(String userText) throws IOException {
-        GenerativeModel model = new GenerativeModel("gemini-1.5-flash-001", this.vertexAI);
-        String systemPrompt = "You are an AI that analyzes the mood of a text. " +
-                "Based on the user's text, choose ONE word from this list that best describes the mood: " +
-                "[Happy, Sad, Calm, Anxious, Excited, Nostalgic, Hopeful, Reflective]. " +
-                "Output only the single word and nothing else.";
-        String fullPrompt = systemPrompt + "\nUser's text: \"" + userText + "\"";
-
-        try {
-            logger.info("Generating mood with Gemini for text: " + userText);
-            GenerateContentResponse response = model.generateContent(fullPrompt);
-            String generatedMood = response.getCandidates(0).getContent().getParts(0).getText();
-            logger.info("Generated mood: " + generatedMood);
-            return generatedMood.trim();
-        } catch (Exception e) {
-            logger.severe("Error generating mood with Gemini: " + e.getMessage());
-            return "Neutral";
         }
     }
 

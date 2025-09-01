@@ -23,7 +23,7 @@
     <app-garden [memories]="(memories$ | async) || []" (memoryClicked)="onMemoryClicked($event)"></app-garden>
 
     <div class="gardener-actions">
-      <button (click)="requestInsight()" [disabled]="isInsightLoading$ | async">
+      <button (click)="requestInsight('insight')" [disabled]="isInsightLoading$ | async">
         <ng-container *ngIf="!(isInsightLoading$ | async); else insightLoading">
           Ask the Gardener for an Insight
         </ng-container>
@@ -34,7 +34,7 @@
       </button>
     </div>
 
-    <app-insight-display [insight]="latestInsight$ | async"></app-insight-display>
+    <app-insight-display [insight]="latestInsight$ | async" (requestInsight)="requestInsight($event)"></app-insight-display>
 
   </main>
 

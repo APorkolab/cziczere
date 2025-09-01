@@ -22,7 +22,6 @@ export interface InsightData {
 export interface AtmosphereData {
   weather: string;
   backgroundColor: string;
-  musicUrl: string;
 }
 
 @Injectable({
@@ -52,6 +51,14 @@ export class ApiService {
         return this.http.post<MemoryData>(this.generateFunctionUrl, body, { headers });
       })
     );
+  }
+
+  requestWeeklySummary(): Observable<InsightData> {
+    return this.requestInsight('weekly_summary');
+  }
+
+  requestMonthlyInsight(): Observable<InsightData> {
+    return this.requestInsight('monthly_insight');
   }
 
   getAtmosphere(): Observable<AtmosphereData> {

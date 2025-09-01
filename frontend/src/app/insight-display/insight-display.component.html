@@ -1,4 +1,10 @@
-<div *ngIf="insight" class="insight-container">
-  <span class="gardener-icon">🧑‍🌾</span>
-  <p class="insight-text">"{{ insight.text }}"</p>
+<div class="insight-container">
+  <div *ngIf="insight" class="insight-content">
+    <span class="gardener-icon">🧑‍🌾</span>
+    <p class="insight-text">"{{ insight.text }}"</p>
+  </div>
+  <div class="button-container">
+    <button (click)="requestWeeklySummary()">Weekly Summary</button>
+    <button (click)="requestMonthlyInsight()">Monthly Insight</button>
+  </div>
 </div>

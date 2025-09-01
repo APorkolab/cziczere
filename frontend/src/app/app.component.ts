@@ -39,12 +39,25 @@ export class AppComponent {
     });
   }
 
-  requestInsight() {
+  requestInsight(type: 'insight' | 'weekly_summary' | 'monthly_insight' = 'insight') {
     this.isInsightLoading$.next(true);
-    this.api.requestInsight().pipe(
+    let apiCall;
+    switch (type) {
+      case 'weekly_summary':
+        apiCall = this.api.requestWeeklySummary();
+        break;
+      case 'monthly_insight':
+        apiCall = this.api.requestMonthlyInsight();
+        break;
+      default:
+        apiCall = this.api.requestInsight();
+        break;
+    }
+
+    apiCall.pipe(
       catchError(err => {
-        console.error('Error requesting insight:', err);
-        alert('Could not get an insight. Are there enough memories in your garden?');
+        console.error(`Error requesting ${type}:`, err);
+        alert(`Could not get an ${type}. Are there enough memories in your garden?`);
         return of(null); // Return a null observable to complete the stream
       })
     ).subscribe({
