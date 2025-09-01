@@ -36,9 +36,9 @@ public class AnalyzeMemories implements HttpFunction {
     private static final String PROJECT_ID = System.getenv().getOrDefault("GCP_PROJECT_ID", "your-gcp-project-id");
     private static final String REGION = System.getenv().getOrDefault("GCP_REGION", "us-central1");
 
-    private final Firestore db;
-    private final VertexAI vertexAI;
-    private final FirebaseAuth firebaseAuth;
+    Firestore db;
+    VertexAI vertexAI;
+    FirebaseAuth firebaseAuth;
 
     static {
         // Firebase Admin SDK initialization
@@ -169,7 +169,7 @@ public class AnalyzeMemories implements HttpFunction {
                 .map(MemoryData::userText)
                 .collect(Collectors.joining("\n---\n"));
 
-        GenerativeModel model = new GenerativeModel("gemini-1.5-flash-001", this.vertexAI);
+        GenerativeModel model = getGenerativeModel("gemini-1.5-flash-001");
         String systemPrompt = "You are the Gardener's Assistant. Your role is to help users reflect on their memories. " +
                 "You will be given a list of a user's memories, separated by '---'. " +
                 "Your task is to identify a recurring positive theme, pattern, or source of joy in these memories. " +
@@ -200,7 +200,7 @@ public class AnalyzeMemories implements HttpFunction {
                 .map(m -> "Memory: " + m.userText() + "\nEmotions: " + gson.toJson(m.emotions()))
                 .collect(Collectors.joining("\n---\n"));
 
-        GenerativeModel model = new GenerativeModel("gemini-1.5-flash-001", this.vertexAI);
+        GenerativeModel model = getGenerativeModel("gemini-1.5-flash-001");
         String systemPrompt = "You are the Gardener's Assistant. You will be given a list of a user's memories and associated emotions from the past week. " +
                 "Your task is to create a 'memory bouquet' (emlék-csokor). " +
                 "This should be a short, poetic, and uplifting summary of the week's highlights and feelings. " +
@@ -228,7 +228,7 @@ public class AnalyzeMemories implements HttpFunction {
                 .map(m -> "Memory: " + m.userText() + "\nEmotions: " + gson.toJson(m.emotions()))
                 .collect(Collectors.joining("\n---\n"));
 
-        GenerativeModel model = new GenerativeModel("gemini-1.5-flash-001", this.vertexAI);
+        GenerativeModel model = getGenerativeModel("gemini-1.5-flash-001");
         String systemPrompt = "You are the Gardener's Assistant, a reflective and insightful AI. " +
                 "You will be given a list of a user's memories and their associated emotions from the past month. " +
                 "Your task is to identify deep, overarching patterns, shifts in emotion, or recurring themes that might not be obvious week-to-week. " +
@@ -282,5 +282,9 @@ public class AnalyzeMemories implements HttpFunction {
         return documents.stream()
                 .map(doc -> doc.toObject(MemoryData.class))
                 .collect(Collectors.toList());
+    }
+
+    protected GenerativeModel getGenerativeModel(String modelName) {
+        return new GenerativeModel(modelName, this.vertexAI);
     }
 }

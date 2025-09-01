@@ -38,14 +38,11 @@ public class GetAtmosphere implements HttpFunction {
     private static final String PROJECT_ID = System.getenv().getOrDefault("GCP_PROJECT_ID", "your-gcp-project-id");
     private static final String REGION = System.getenv().getOrDefault("GCP_REGION", "us-central1");
 
-    private final Firestore db;
-    private final VertexAI vertexAI;
+    Firestore db;
+    VertexAI vertexAI;
 
     // Simple record for the response
     public record AtmosphereData(String weather, String backgroundColor) {}
-
-    // Local record to ensure compatibility with the data being read from Firestore
-    private record MemoryData(String userText) {}
 
     static {
         // Static initializer for Firebase Admin SDK
@@ -157,7 +154,7 @@ public class GetAtmosphere implements HttpFunction {
                 .map(MemoryData::userText)
                 .collect(Collectors.joining("\n---\n"));
 
-        GenerativeModel model = new GenerativeModel("gemini-1.5-flash-001", this.vertexAI);
+        GenerativeModel model = getGenerativeModel("gemini-1.5-flash-001");
         String systemPrompt = "You are an AI that determines the atmosphere of a digital garden based on a user's recent memories. " +
                 "Analyze the overall sentiment and themes from the memories provided. " +
                 "Based on your analysis, you must choose ONE weather condition from this list: [Clear, Sunny, Rainy, Snowy, Foggy, Stormy]. " +
@@ -183,5 +180,9 @@ public class GetAtmosphere implements HttpFunction {
             // Provide a fallback/default atmosphere on error
             return new AtmosphereData("Clear", "#DDDDDD"); // Light grey as a fallback
         }
+    }
+
+    protected GenerativeModel getGenerativeModel(String modelName) {
+        return new GenerativeModel(modelName, this.vertexAI);
     }
 }
