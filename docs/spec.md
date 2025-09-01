@@ -44,7 +44,7 @@ This is where the magic happens. The visual elements of the garden are not creat
     *   **Result:** A visual element is created based on the prompt generated in the previous step. It could be a flower whose petals are the colors of the autumn forest, or a glowing mushroom with the silhouette of a dog on its cap. The possibilities are endless.
 *   **Dynamic Environment:** The entire atmosphere of the garden is AI-driven.
     *   **Mood-Driven Weather:** The AI analyzes the average mood of the past week's memories. If the user has felt a lot of peace, the garden might have quiet, sunny weather. If it was a tougher week, a gentle, cleansing rain might fall, with glistening drops falling from the plants.
-    *   **Generated Ambient Music:** The AI could even generate unique, minimalist background music or nature sounds that match the garden's mood (similar to Google's MusicLM technology).
+    *   **Generated Ambient Music:** The application selects an ambient sound based on the overall mood of the user's recent memories. Due to the lack of a suitable free-tier API for AI music generation, this feature is currently implemented using a set of placeholder sound files.
 
 #### ### 🧠 3. The Gardener's Assistant (AI-Powered Reflection)
 
@@ -53,7 +53,7 @@ This is a completely new, AI-based feature that helps the user reflect on their 
 *   **Proactive, but not intrusive, interaction:** On a chatbot-like interface, the "assistant" provides gentle feedback.
     *   **Pattern Recognition:** "I've noticed that many of your memories in the past month are related to 'music.' It seems to be an important source of replenishment for you."
     *   **Summaries:** Once a week, the AI can create a "memory bouquet": a short, poem-like summary of the week's best moments, or even a collage of the most beautiful "flowers" generated that week.
-    *   **Intelligent Reminders:** "You haven't planted in your garden for a while. Is there a small joy from today that you'd like to enrich it with?"
+    *   **Intelligent Reminders:** The application sends a push notification to the user if they haven't added a memory in a week. This is handled by a scheduled Cloud Function.
 
 ---
 
