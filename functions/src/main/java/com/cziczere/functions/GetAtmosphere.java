@@ -44,6 +44,9 @@ public class GetAtmosphere implements HttpFunction {
     // Simple record for the response
     public record AtmosphereData(String weather, String backgroundColor) {}
 
+    // Local record to ensure compatibility with the data being read from Firestore
+    private record MemoryData(String userText) {}
+
     static {
         // Static initializer for Firebase Admin SDK
         try {
@@ -139,7 +142,7 @@ public class GetAtmosphere implements HttpFunction {
 
         Query query = memoriesCollection
                 .whereEqualTo("userId", userId)
-                .whereGreaterThanOrEqualTo("createdAt", sevenDaysAgo);
+                .whereGreaterThanOrEqualTo("timestamp", sevenDaysAgo);
 
         List<com.google.cloud.firestore.QueryDocumentSnapshot> documents = query.get().get().getDocuments();
 

@@ -93,7 +93,7 @@ public class GenerateMemoryPlant implements HttpFunction {
                 String imagePrompt = generateImagePromptWithGemini(userText);
                 String imageUrl = generateImageWithImagen(imagePrompt);
 
-                MemoryData newMemory = new MemoryData(userId, userText, imagePrompt, imageUrl, System.currentTimeMillis());
+                MemoryData newMemory = new MemoryData(userId, userText, imagePrompt, imageUrl, System.currentTimeMillis(), "memory");
                 saveToFirestore(newMemory);
 
                 response.setStatusCode(200, "OK");

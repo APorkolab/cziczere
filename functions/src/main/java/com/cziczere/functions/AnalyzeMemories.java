@@ -81,20 +81,37 @@ public class AnalyzeMemories implements HttpFunction {
         try (BufferedWriter writer = response.getWriter()) {
             try {
                 String userId = getUserIdFromAuthToken(request);
+                RequestData requestData = gson.fromJson(request.getReader(), RequestData.class);
+                String analysisType = Optional.ofNullable(requestData)
+                                              .map(RequestData::analysisType)
+                                              .orElse("insight");
 
-                // 1. Fetch memories
-                List<MemoryData> memories = getMemoriesForUser(userId);
-                if (memories.isEmpty()) {
-                    response.setStatusCode(404, "Not Found");
-                    writer.write("{\"message\":\"No memories found to analyze.\"}");
-                    return;
+                String insightText;
+                List<MemoryData> memories;
+
+                switch (analysisType) {
+                    case "weekly_summary":
+                        memories = getRecentMemoriesForUser(userId);
+                        if (memories.isEmpty()) {
+                            response.setStatusCode(404, "Not Found");
+                            writer.write("{\"message\":\"No recent memories for a weekly summary.\"}");
+                            return;
+                        }
+                        insightText = generateWeeklySummary(memories);
+                        break;
+                    default: // "insight"
+                        memories = getMemoriesForUser(userId);
+                        if (memories.isEmpty()) {
+                            response.setStatusCode(404, "Not Found");
+                            writer.write("{\"message\":\"No memories found to analyze.\"}");
+                            return;
+                        }
+                        insightText = generateStandardInsight(memories);
+                        break;
                 }
 
-                // 2. Generate insight
-                String insightText = generateInsightWithGemini(memories);
-
                 // 3. Save insight
-                InsightData newInsight = new InsightData(userId, insightText, System.currentTimeMillis());
+                InsightData newInsight = new InsightData(userId, insightText, System.currentTimeMillis(), analysisType);
                 saveInsightToFirestore(newInsight);
 
                 // 4. Return insight
@@ -147,7 +164,7 @@ public class AnalyzeMemories implements HttpFunction {
     }
 
 
-    String generateInsightWithGemini(List<MemoryData> memories) throws IOException {
+    private String generateStandardInsight(List<MemoryData> memories) throws IOException {
         String combinedMemories = memories.stream()
                 .map(MemoryData::userText)
                 .collect(Collectors.joining("\n---\n"));
@@ -179,9 +196,49 @@ public class AnalyzeMemories implements HttpFunction {
         }
     }
 
+    private String generateWeeklySummary(List<MemoryData> memories) throws IOException {
+        String combinedMemories = memories.stream()
+                .map(MemoryData::userText)
+                .collect(Collectors.joining("\n---\n"));
+
+        GenerativeModel model = new GenerativeModel("gemini-1.5-flash-001", this.vertexAI);
+        String systemPrompt = "You are the Gardener's Assistant. You will be given a list of a user's memories from the past week. " +
+                "Your task is to create a 'memory bouquet' (emlék-csokor). " +
+                "This should be a short, poetic, and uplifting summary of the week's highlights and feelings. " +
+                "Weave together the key themes and emotions into a cohesive, gentle, and beautiful paragraph. " +
+                "Address the user in a warm and personal tone. Start with a phrase like 'Here is your weekly bouquet of memories...' or similar. " +
+                "The summary should be in English.";
+
+        String fullPrompt = systemPrompt + "\n\nHere are the user's memories from the week:\n" + combinedMemories;
+
+        try {
+            logger.info("Generating weekly summary with Gemini for user.");
+            GenerateContentResponse response = model.generateContent(fullPrompt);
+            String generatedSummary = response.getCandidates(0).getContent().getParts(0).getText();
+            logger.info("Generated weekly summary: " + generatedSummary);
+            return generatedSummary.trim();
+        } catch (Exception e) {
+            logger.severe("Error generating weekly summary with Gemini: " + e.getMessage());
+            return "Could not compose your weekly memory bouquet, but I hope you had a week filled with small joys.";
+        }
+    }
+
     void saveInsightToFirestore(InsightData data) throws ExecutionException, InterruptedException {
         logger.info("Saving insight data to Firestore collection 'insights': " + data);
         db.collection("insights").document().set(data).get();
         logger.info("Successfully saved insight to Firestore.");
+    }
+
+    private List<MemoryData> getRecentMemoriesForUser(String userId) throws ExecutionException, InterruptedException {
+        CollectionReference memoriesCollection = db.collection("memories");
+        long sevenDaysAgo = System.currentTimeMillis() - (7 * 24 * 60 * 60 * 1000);
+        Query query = memoriesCollection
+                .whereEqualTo("userId", userId)
+                .whereGreaterThanOrEqualTo("timestamp", sevenDaysAgo);
+
+        List<com.google.cloud.firestore.QueryDocumentSnapshot> documents = query.get().get().getDocuments();
+        return documents.stream()
+                .map(doc -> doc.toObject(MemoryData.class))
+                .collect(Collectors.toList());
     }
 }
