@@ -10,6 +10,12 @@ import com.google.cloud.vertexai.api.GenerateContentResponse;
 import com.google.cloud.vertexai.generativeai.GenerativeModel;
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
+import com.google.auth.oauth2.GoogleCredentials;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.FirebaseOptions;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthException;
+import com.google.firebase.auth.FirebaseToken;
 import com.google.gson.JsonSyntaxException;
 import com.google.protobuf.Value;
 import com.google.protobuf.util.JsonFormat;
@@ -21,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class GenerateMemoryPlant implements HttpFunction {
@@ -37,8 +44,10 @@ public class GenerateMemoryPlant implements HttpFunction {
     // A record to hold the structured response from Gemini.
     record GeminiResponse(String imagePrompt, Map<String, Double> emotions) {}
 
+    // Static initializer for Firebase Admin SDK
     static {
         try {
+            // Check if the default app is already initialized
             if (FirebaseApp.getApps().isEmpty()) {
                 GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
                 FirebaseOptions options = FirebaseOptions.builder()
@@ -49,6 +58,7 @@ public class GenerateMemoryPlant implements HttpFunction {
                 logger.info("Firebase Admin SDK initialized successfully.");
             }
         } catch (IOException e) {
+            // Use Level.SEVERE for logging exceptions
             logger.log(Level.SEVERE, "Firebase Admin SDK initialization failed.", e);
         }
     }
@@ -64,12 +74,23 @@ public class GenerateMemoryPlant implements HttpFunction {
         this.vertexAI = vertexAI;
     }
 
+    // Custom exception for auth errors
+    static class AuthException extends Exception {
+        public AuthException(String message) {
+            super(message);
+        }
+    }
+
     @Override
     public void service(HttpRequest request, HttpResponse response) throws Exception {
         response.appendHeader("Content-Type", "application/json");
 
         try (BufferedWriter writer = response.getWriter()) {
             try {
+                // Authenticate user first
+                String userId = getUserIdFromAuthToken(request);
+
+                // Then process the request
                 RequestData requestData = gson.fromJson(request.getReader(), RequestData.class);
                 if (requestData == null || requestData.text() == null || requestData.text().isBlank()) {
                     response.setStatusCode(400, "Bad Request: 'text' field is required and cannot be empty.");
@@ -77,7 +98,6 @@ public class GenerateMemoryPlant implements HttpFunction {
                     return;
                 }
                 String userText = requestData.text();
-                String userId = getUserIdFromAuthToken(request);
 
                 GeminiResponse geminiResponse = generateAnalysisWithGemini(userText);
                 String imageUrl = generateImageWithImagen(geminiResponse.imagePrompt());
@@ -96,20 +116,35 @@ public class GenerateMemoryPlant implements HttpFunction {
                 response.setStatusCode(200, "OK");
                 writer.write(gson.toJson(newMemory));
 
+            } catch (AuthException e) {
+                logger.warning("Authentication failed: " + e.getMessage());
+                response.setStatusCode(401, "Unauthorized");
+                writer.write("{\"error\":\"" + e.getMessage() + "\"}");
             } catch (JsonParseException e) {
                 logger.severe("Error parsing JSON request: " + e.getMessage());
                 response.setStatusCode(400, "Bad Request: Invalid JSON format.");
                 writer.write("{\"error\":\"Invalid JSON format.\"}");
             } catch (Exception e) {
-                logger.severe("Internal Server Error: " + e.getMessage());
+                logger.log(Level.SEVERE, "Internal Server Error", e);
                 response.setStatusCode(500, "Internal Server Error.");
                 writer.write("{\"error\":\"An unexpected error occurred.\"}");
             }
         }
     }
 
-    String getUserIdFromAuthToken(HttpRequest request) {
-        return "static-user-id-for-testing";
+    String getUserIdFromAuthToken(HttpRequest request) throws AuthException {
+        Optional<String> authHeader = request.getFirstHeader("Authorization");
+        if (authHeader.isEmpty() || !authHeader.get().startsWith("Bearer ")) {
+            throw new AuthException("Authorization header is missing or not Bearer type.");
+        }
+
+        String idToken = authHeader.get().substring(7);
+        try {
+            FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(idToken);
+            return decodedToken.getUid();
+        } catch (FirebaseAuthException e) {
+            throw new AuthException("Invalid Firebase ID token: " + e.getMessage());
+        }
     }
 
     GeminiResponse generateAnalysisWithGemini(String userText) throws IOException {

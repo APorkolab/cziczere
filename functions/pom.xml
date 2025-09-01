@@ -54,6 +54,19 @@
       <version>2.10.1</version>
     </dependency>
 
+    <!-- Firebase Admin SDK for authentication -->
+    <dependency>
+      <groupId>com.google.firebase</groupId>
+      <artifactId>firebase-admin</artifactId>
+      <version>9.3.0</version>
+    </dependency>
+
+    <!-- Google Cloud Storage for saving generated images -->
+    <dependency>
+      <groupId>com.google.cloud</groupId>
+      <artifactId>google-cloud-storage</artifactId>
+    </dependency>
+
     <!-- Required for the function to run -->
     <dependency>
         <groupId>org.slf4j</groupId>
