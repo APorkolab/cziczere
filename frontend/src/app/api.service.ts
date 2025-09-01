@@ -28,6 +28,7 @@ export interface PosterResponse {
 export interface AtmosphereData {
   weather: string;
   backgroundColor: string;
+  soundUrl: string;
 }
 
 @Injectable({

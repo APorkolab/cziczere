@@ -42,7 +42,7 @@ public class GetAtmosphere implements HttpFunction {
     VertexAI vertexAI;
 
     // Simple record for the response
-    public record AtmosphereData(String weather, String backgroundColor) {}
+    public record AtmosphereData(String weather, String backgroundColor, String soundUrl) {}
 
     static {
         // Static initializer for Firebase Admin SDK
@@ -91,7 +91,7 @@ public class GetAtmosphere implements HttpFunction {
                 List<MemoryData> memories = getRecentMemoriesForUser(userId);
                 if (memories.isEmpty()) {
                     // Return a default atmosphere if no recent memories
-                    AtmosphereData defaultAtmosphere = new AtmosphereData("Clear", "#87CEEB"); // Sky Blue
+                    AtmosphereData defaultAtmosphere = new AtmosphereData("Clear", "#87CEEB", "sounds/calm.mp3"); // Sky Blue
                     writer.write(gson.toJson(defaultAtmosphere));
                     response.setStatusCode(200);
                     return;
@@ -100,9 +100,14 @@ public class GetAtmosphere implements HttpFunction {
                 // 2. Generate atmosphere from memories
                 AtmosphereData atmosphere = generateAtmosphereWithGemini(memories);
 
-                // 3. Return atmosphere
+                // 3. Select sound based on mood
+                String soundUrl = selectSoundForMood(memories);
+                AtmosphereData finalAtmosphere = new AtmosphereData(atmosphere.weather(), atmosphere.backgroundColor(), soundUrl);
+
+
+                // 4. Return atmosphere
                 response.setStatusCode(200, "OK");
-                writer.write(gson.toJson(atmosphere));
+                writer.write(gson.toJson(finalAtmosphere));
 
             } catch (AuthException e) {
                 logger.warning("Authentication failed: " + e.getMessage());
@@ -174,11 +179,40 @@ public class GetAtmosphere implements HttpFunction {
             String jsonResponse = rawResponse.trim().replace("```json", "").replace("```", "").trim();
 
             logger.info("Generated atmosphere JSON: " + jsonResponse);
-            return gson.fromJson(jsonResponse, AtmosphereData.class);
+            AtmosphereData data = gson.fromJson(jsonResponse, AtmosphereData.class);
+            return new AtmosphereData(data.weather(), data.backgroundColor(), ""); // soundUrl is handled separately
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error generating or parsing atmosphere with Gemini: " + e.getMessage(), e);
             // Provide a fallback/default atmosphere on error
-            return new AtmosphereData("Clear", "#DDDDDD"); // Light grey as a fallback
+            return new AtmosphereData("Clear", "#DDDDDD", "sounds/calm.mp3"); // Light grey as a fallback
+        }
+    }
+
+    private String selectSoundForMood(List<MemoryData> memories) {
+        double totalScore = 0;
+        int emotionCount = 0;
+
+        for (MemoryData memory : memories) {
+            if (memory.emotions() != null) {
+                for (double score : memory.emotions().values()) {
+                    totalScore += score;
+                    emotionCount++;
+                }
+            }
+        }
+
+        if (emotionCount == 0) {
+            return "sounds/neutral.mp3"; // Default sound
+        }
+
+        double averageScore = totalScore / emotionCount;
+
+        if (averageScore > 0.5) {
+            return "sounds/happy.mp3";
+        } else if (averageScore < -0.5) {
+            return "sounds/sad.mp3";
+        } else {
+            return "sounds/neutral.mp3";
         }
     }
 

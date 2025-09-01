@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Auth, User, user, GoogleAuthProvider, signInWithPopup, signOut } from '@angular/fire/auth';
+import { Firestore, doc, setDoc } from '@angular/fire/firestore';
 import { Observable, of, BehaviorSubject } from 'rxjs';
 import { catchError, switchMap, tap } from 'rxjs/operators';
 
@@ -11,6 +12,7 @@ import { MemoryDetailComponent } from './memory-detail/memory-detail.component';
 import { ArViewComponent } from './ar-view/ar-view.component';
 import { ApiService, InsightData, MemoryData } from './api.service';
 import { ArStateService } from './ar-state.service';
+import { NotificationService } from './notification.service';
 
 @Component({
   selector: 'app-root',
@@ -23,6 +25,8 @@ export class AppComponent implements OnInit {
   private auth: Auth = inject(Auth);
   private apiService: ApiService = inject(ApiService);
   private arStateService: ArStateService = inject(ArStateService);
+  private firestore: Firestore = inject(Firestore);
+  private notificationService: NotificationService = inject(NotificationService);
 
   @ViewChild(GardenComponent) gardenComponent!: GardenComponent;
 
@@ -48,7 +52,12 @@ export class AppComponent implements OnInit {
   }
 
   login() {
-    signInWithPopup(this.auth, new GoogleAuthProvider());
+    signInWithPopup(this.auth, new GoogleAuthProvider()).then(result => {
+      this.notificationService.requestPermission();
+      this.notificationService.listenForMessages();
+      const userDoc = doc(this.firestore, `users/${result.user.uid}`);
+      setDoc(userDoc, { lastActive: Date.now() }, { merge: true });
+    });
   }
 
   logout() {
@@ -58,7 +67,15 @@ export class AppComponent implements OnInit {
   onMemorySubmit(memoryText: string) {
     this.isLoading$.next(true);
     this.apiService.createMemory(memoryText).subscribe({
-      next: () => this.isLoading$.next(false),
+      next: (newMemory) => {
+        this.isLoading$.next(false);
+        // Also update the user's last active timestamp
+        const user = this.auth.currentUser;
+        if (user) {
+          const userDoc = doc(this.firestore, `users/${user.uid}`);
+          setDoc(userDoc, { lastActive: newMemory.timestamp }, { merge: true });
+        }
+      },
       error: (err) => {
         console.error('Memory creation failed:', err);
         this.isLoading$.next(false);

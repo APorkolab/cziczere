@@ -27,6 +27,7 @@ export class GardenComponent implements AfterViewInit, OnDestroy {
   private atmosphere: AtmosphereData | null = null;
   private memoryMeshes: THREE.Mesh[] = [];
   private weatherParticles: THREE.Points | null = null;
+  private audioPlayer = new Audio();
 
 
   constructor(private apiService: ApiService) {}
@@ -46,6 +47,7 @@ export class GardenComponent implements AfterViewInit, OnDestroy {
     if (this.atmosphereSubscription) {
       this.atmosphereSubscription.unsubscribe();
     }
+    this.audioPlayer.pause();
     // Also dispose of Three.js objects to prevent memory leaks
     this.renderer.dispose();
     this.scene.traverse(object => {
@@ -76,6 +78,9 @@ export class GardenComponent implements AfterViewInit, OnDestroy {
           this.scene.background = new THREE.Color(data.backgroundColor);
           this.createWeatherParticles(data.weather);
         }
+        this.audioPlayer.src = `assets/${data.soundUrl}`;
+        this.audioPlayer.loop = true;
+        this.audioPlayer.play().catch(e => console.error("Error playing audio:", e));
         console.log('Atmosphere data:', data);
       },
       error: (error) => console.error('Error getting atmosphere:', error)
