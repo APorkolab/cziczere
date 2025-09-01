@@ -11,6 +11,19 @@
   <div *ngIf="insight && !isLoading" class="insight-content fade-in">
     <p class="quote">“</p>
     <p class="insight-text">{{ insight.text }}</p>
-    <p class="timestamp">{{ insight.timestamp | date:'medium' }}</p>
+    <div class="insight-footer">
+      <p class="timestamp">{{ insight.timestamp | date:'medium' }}</p>
+      <button
+        class="listen-button"
+        (click)="playInsightAudio(insight.id)"
+        [disabled]="(isAudioLoading$ | async) === true">
+        <ng-container *ngIf="!(isAudioLoading$ | async); else audioLoading">
+          Listen 🔊
+        </ng-container>
+        <ng-template #audioLoading>
+          <div class="spinner-small"></div>
+        </ng-template>
+      </button>
+    </div>
   </div>
 </div>

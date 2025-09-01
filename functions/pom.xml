@@ -72,6 +72,12 @@
       <artifactId>google-cloud-storage</artifactId>
     </dependency>
 
+    <!-- Google Cloud Text-to-Speech for audio synthesis -->
+    <dependency>
+      <groupId>com.google.cloud</groupId>
+      <artifactId>google-cloud-texttospeech</artifactId>
+    </dependency>
+
     <!-- Required for the function to run -->
     <dependency>
         <groupId>org.slf4j</groupId>

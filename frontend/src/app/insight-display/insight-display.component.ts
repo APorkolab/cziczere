@@ -1,6 +1,7 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { InsightData } from '../api.service';
+import { ApiService, InsightData } from '../api.service';
+import { BehaviorSubject } from 'rxjs';
 
 @Component({
   selector: 'app-insight-display',
@@ -13,4 +14,26 @@ export class InsightDisplayComponent {
   @Input() insight: InsightData | null = null;
   @Input() isLoading: boolean = false;
   @Input() error: string | null = null;
+
+  private apiService: ApiService = inject(ApiService);
+  private audioPlayer = new Audio();
+  isAudioLoading$ = new BehaviorSubject<boolean>(false);
+
+  playInsightAudio(insightId: string | undefined) {
+    if (!insightId) return;
+
+    this.isAudioLoading$.next(true);
+    this.apiService.getInsightAudioUrl(insightId).subscribe({
+      next: (response) => {
+        this.audioPlayer.src = response.audioUrl;
+        this.audioPlayer.play();
+        this.isAudioLoading$.next(false);
+      },
+      error: (err) => {
+        console.error('Error getting insight audio:', err);
+        this.isAudioLoading$.next(false);
+        // Optionally show an error message to the user
+      }
+    });
+  }
 }

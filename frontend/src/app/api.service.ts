@@ -15,6 +15,7 @@ export interface MemoryData {
 }
 
 export interface InsightData {
+  id?: string; // Add optional id field
   userId: string;
   text: string;
   timestamp: number;
@@ -43,7 +44,22 @@ export class ApiService {
   private analyzeFunctionUrl = 'http://127.0.0.1:5001/cziczere-ai/us-central1/analyzeMemories';
   private atmosphereFunctionUrl = 'http://127.0.0.1:5001/cziczere-ai/us-central1/getAtmosphere';
   private exportGardenFunctionUrl = 'http://127.0.0.1:5001/cziczere-ai/us-central1/exportGarden';
+  private insightAudioFunctionUrl = 'http://127.0.0.1:5001/cziczere-ai/us-central1/getInsightAudio';
 
+
+  getInsightAudioUrl(insightId: string): Observable<{audioUrl: string}> {
+    return idToken(this.auth).pipe(
+      first(),
+      switchMap(token => {
+        if (!token) {
+          throw new Error('User not logged in!');
+        }
+        const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+        const params = { insightId };
+        return this.http.get<{audioUrl: string}>(this.insightAudioFunctionUrl, { headers, params });
+      })
+    );
+  }
 
   exportGardenAsPoster(): Observable<PosterResponse> {
     return idToken(this.auth).pipe(
@@ -112,7 +128,7 @@ export class ApiService {
           orderBy('timestamp', 'desc'),
           limit(1)
         );
-        return collectionData(q).pipe(
+        return collectionData(q, { idField: 'id' }).pipe(
           map(insights => (insights.length > 0 ? insights[0] as InsightData : null))
         );
       })
