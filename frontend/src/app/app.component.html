@@ -23,7 +23,7 @@
         <div class="spinner"></div>
       </div>
 
-    <app-garden-canvas [memories]="memories$ | async"></app-garden-canvas>
+    <app-garden (memoryClicked)="onMemoryClicked($event)"></app-garden>
 
     <div class="gardener-actions">
       <button (click)="requestInsight()" [disabled]="isInsightLoading$ | async">
@@ -55,5 +55,11 @@
     <p>Please log in to cultivate your memory garden.</p>
   </div>
 </div>
+
+<app-memory-detail
+  *ngIf="selectedMemory"
+  [memory]="selectedMemory"
+  (close)="onDetailClose()">
+</app-memory-detail>
 
 <app-ar-view *ngIf="isArViewVisible"></app-ar-view>

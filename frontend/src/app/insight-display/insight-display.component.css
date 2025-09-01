@@ -1,78 +1,94 @@
 :host {
   display: block;
-  width: 100%;
-  max-width: 600px;
-  margin: 2rem auto;
+  font-family: 'Averia Serif Libre', serif;
 }
 
-.container {
-  background-color: #f9f9f9;
-  border: 1px solid #e0e0e0;
+.insight-container {
+  background-color: #fdfaf6;
+  border: 1px solid #e0dcd7;
   border-radius: 8px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  padding: 24px;
+  max-width: 500px;
+  margin: 20px auto;
   text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
 }
 
-.insight-card {
-  margin-bottom: 1.5rem;
-  padding: 1rem;
-  background-color: #ffffff;
-  border-left: 5px solid #4CAF50; /* Green for standard insight */
-  border-radius: 4px;
+.insight-content {
+  opacity: 0;
+  animation: fadeIn 1s forwards;
 }
 
-.insight-card.insight-weekly_summary {
-  border-left-color: #2196F3; /* Blue for weekly */
-}
-
-.insight-card.insight-monthly_insight {
-  border-left-color: #9C27B0; /* Purple for monthly */
-}
-
-.insight-header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
-}
-
-.icon {
-  font-size: 1.5rem;
-}
-
-.title {
+.quote {
+  font-size: 48px;
+  color: #d4c4a2;
   margin: 0;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #333;
+  line-height: 1;
 }
 
-.text {
-  font-style: italic;
-  color: #555;
-  margin: 0;
-  text-align: left;
+.insight-text {
+  font-size: 1.2rem;
+  color: #5a524c;
+  margin: 16px 0;
   line-height: 1.6;
 }
 
-.actions {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
+.timestamp {
+  font-size: 0.8rem;
+  color: #a89f94;
+  margin-top: 20px;
 }
 
-button {
-  background-color: #4a4a4a;
+.loading-spinner, .error-message, .no-insight {
+  padding: 40px 20px;
+  color: #7a726a;
+}
+
+.spinner {
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border-left-color: #8b7e6a;
+  animation: spin 1s ease infinite;
+  margin: 20px auto 0;
+}
+
+.insight-button {
+  background-color: #8b7e6a;
   color: white;
   border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 4px;
-  cursor: pointer;
+  border-radius: 20px;
+  padding: 10px 20px;
+  font-family: 'Averia Serif Libre', serif;
   font-size: 1rem;
-  transition: background-color 0.2s ease-in-out;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin-top: 20px;
 }
 
-button:hover {
-  background-color: #6a6a6a;
+.insight-button:disabled {
+  background-color: #c5bfb6;
+  cursor: not-allowed;
+}
+
+.insight-button:hover:not(:disabled) {
+  background-color: #7a726a;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
 }

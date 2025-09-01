@@ -1,0 +1,142 @@
+:host {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  animation: fadeIn 0.3s ease;
+}
+
+.detail-card {
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  z-index: 1001;
+  animation: slideIn 0.4s ease-out;
+  padding: 20px;
+}
+
+.close-button {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: #aaa;
+  cursor: pointer;
+}
+
+.detail-image {
+  width: 100%;
+  height: auto;
+  max-height: 400px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+h2, h3 {
+  font-family: 'Averia Serif Libre', serif;
+  color: #333;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 8px;
+  margin-top: 24px;
+}
+
+.memory-text {
+  font-size: 1.1rem;
+  line-height: 1.7;
+  color: #444;
+  white-space: pre-wrap; /* Preserve whitespace and newlines */
+}
+
+.emotions-section ul {
+  list-style: none;
+  padding: 0;
+}
+
+.emotions-section li {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.emotion-name {
+  width: 120px;
+  text-transform: capitalize;
+  color: #555;
+}
+
+.emotion-bar-container {
+  flex-grow: 1;
+  height: 10px;
+  background-color: #f0f0f0;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.emotion-bar {
+  height: 100%;
+  background-color: #8b7e6a;
+  border-radius: 5px;
+}
+
+.emotion-score {
+  width: 50px;
+  text-align: right;
+  font-size: 0.9rem;
+  color: #777;
+}
+
+.prompt-section .prompt-text {
+  background-color: #f8f8f8;
+  border: 1px solid #eee;
+  padding: 12px;
+  border-radius: 4px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.9rem;
+  color: #666;
+  word-wrap: break-word;
+}
+
+.timestamp {
+  text-align: center;
+  margin-top: 30px;
+  font-size: 0.8rem;
+  color: #999;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

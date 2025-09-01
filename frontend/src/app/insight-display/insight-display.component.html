@@ -1,16 +1,16 @@
-<div class="container">
-  <div *ngIf="insight" class="insight-card" [ngClass]="'insight-' + insight.type">
-    <div class="insight-header">
-      <span class="icon">🧑‍🌾</span>
-      <h3 class="title">A Note from the Gardener</h3>
-    </div>
-    <div class="insight-body">
-      <p class="text">"{{ insight.text }}"</p>
-    </div>
+<div class="insight-container" *ngIf="insight || isLoading || error">
+  <div *ngIf="isLoading" class="loading-spinner">
+    <p>Your Gardener's Assistant is reflecting...</p>
+    <div class="spinner"></div>
   </div>
 
-  <div class="actions">
-    <button (click)="requestWeeklySummary()">Get Weekly Summary</button>
-    <button (click)="requestMonthlyInsight()">Get Monthly Insight</button>
+  <div *ngIf="error" class="error-message">
+    <p>{{ error }}</p>
+  </div>
+
+  <div *ngIf="insight && !isLoading" class="insight-content fade-in">
+    <p class="quote">“</p>
+    <p class="insight-text">{{ insight.text }}</p>
+    <p class="timestamp">{{ insight.timestamp | date:'medium' }}</p>
   </div>
 </div>

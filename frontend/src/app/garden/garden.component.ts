@@ -1,4 +1,4 @@
-import { Component, AfterViewInit, ViewChild, ElementRef, OnDestroy } from '@angular/core';
+import { Component, AfterViewInit, ViewChild, ElementRef, OnDestroy, Output, EventEmitter } from '@angular/core';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { ApiService, AtmosphereData, MemoryData } from '../api.service';
@@ -14,6 +14,7 @@ import { Subscription } from 'rxjs';
 })
 export class GardenComponent implements AfterViewInit, OnDestroy {
   @ViewChild('canvas') private canvasRef!: ElementRef;
+  @Output() memoryClicked = new EventEmitter<MemoryData>();
 
   private memories: MemoryData[] = [];
   private memorySubscription!: Subscription;
@@ -210,9 +211,47 @@ export class GardenComponent implements AfterViewInit, OnDestroy {
       const clickedObject = intersects[0].object as THREE.Mesh;
       const memory = clickedObject.userData['memory'] as MemoryData;
       if (memory) {
-        // TODO: Show memory details in a more elegant way (e.g., an overlay)
-        alert(`Memory: ${memory.userText}`);
+        this.memoryClicked.emit(memory);
       }
     }
+  }
+
+  public exportAsPoster(): void {
+    const posterWidth = 4096;
+    const posterHeight = 4096;
+
+    const posterRenderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    posterRenderer.setSize(posterWidth, posterHeight);
+
+    posterRenderer.domElement.style.position = 'absolute';
+    posterRenderer.domElement.style.left = '-9999px';
+    document.body.appendChild(posterRenderer.domElement);
+
+
+    const boundingBox = new THREE.Box3().setFromObject(this.scene);
+    const center = boundingBox.getCenter(new THREE.Vector3());
+    const size = boundingBox.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const fov = this.camera.fov * (Math.PI / 180);
+    let cameraZ = Math.abs(maxDim / 2 * Math.tan(fov * 2));
+    cameraZ *= 1.1;
+
+    const posterCamera = new THREE.PerspectiveCamera(
+      this.camera.fov,
+      posterWidth / posterHeight,
+      0.1,
+      1000
+    );
+    posterCamera.position.set(center.x, center.y, center.z + cameraZ);
+    posterCamera.lookAt(center);
+
+    posterRenderer.render(this.scene, posterCamera);
+
+    const link = document.createElement('a');
+    link.download = 'kert-poszter.png';
+    link.href = posterRenderer.domElement.toDataURL('image/png');
+    link.click();
+
+    document.body.removeChild(posterRenderer.domElement);
   }
 }

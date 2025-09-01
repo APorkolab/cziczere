@@ -112,7 +112,7 @@ class AnalyzeMemoriesTest {
     }
 
     @Test
-    @Disabled("Temporarily disabled due to persistent, non-obvious test failure where the response writer is empty.")
+    @Disabled("Temporarily disabled due to a persistent, non-obvious test failure where the response writer is empty, despite the code path appearing correct and logging indicating successful execution up to the write call.")
     void testService_SuccessfulInsight() throws Exception {
         // Arrange
         mockFirebaseAuth();

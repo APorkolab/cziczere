@@ -1,6 +1,6 @@
 import { Component, Input } from '@angular/core';
-import { InsightData } from '../api.service';
 import { CommonModule } from '@angular/common';
+import { InsightData } from '../api.service';
 
 @Component({
   selector: 'app-insight-display',
@@ -11,4 +11,6 @@ import { CommonModule } from '@angular/common';
 })
 export class InsightDisplayComponent {
   @Input() insight: InsightData | null = null;
+  @Input() isLoading: boolean = false;
+  @Input() error: string | null = null;
 }
