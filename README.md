@@ -17,11 +17,12 @@ In a fast-paced digital world, Cziczere offers a space for quiet reflection. The
     
 -   **Secure Authentication**: User authentication is handled by Firebase Authentication, ensuring that each user's garden is private and secure.
 
--   **(In-Progress) Dynamic Garden Atmosphere**: The garden's ambient environment (lighting, weather, sound) will subtly change based on the overall mood of the memories planted over time.
+-   **Dynamic Garden Atmosphere**: The garden's ambient environment (background color and weather effects like rain/snow) now changes based on the overall mood of recent memories.
     
--   **(Planned) Interactive Exploration**: Users will be able to navigate their 3D garden, revisit memories by clicking on their corresponding plants, and watch their landscape flourish.
+-   **Interactive Exploration**: Users can navigate their 3D garden, and click on memories to see the associated text. The garden layout is a beautiful and organic spiral.
     
 -   **(Planned) The Gardener's Assistant**: An AI-powered conversational agent that helps users find patterns in their thoughts and offers gentle prompts for reflection.
+-   **Comprehensive Backend Unit Tests**: The backend functions are now covered by a suite of unit tests using JUnit and Mockito to ensure reliability and correctness.
 
 ## ## 🛠️ Tech Stack & Architecture
 

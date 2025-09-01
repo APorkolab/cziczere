@@ -24,12 +24,19 @@ export interface PosterResponse {
   base64Image: string;
 }
 
+export interface AtmosphereData {
+  weather: string;
+  backgroundColor: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class ApiService {
   private auth: Auth = inject(Auth);
+  private firestore: Firestore = inject(Firestore);
   private http: HttpClient = inject(HttpClient);
+  user$ = user(this.auth);
 
   // TODO: Replace with the actual URL of your deployed Cloud Function.
   private generateFunctionUrl = 'http://127.0.0.1:5001/cziczere-ai/us-central1/generateMemoryPlant';
@@ -47,6 +54,19 @@ export class ApiService {
         }
         const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
         return this.http.post<PosterResponse>(this.exportGardenFunctionUrl, {}, { headers });
+      })
+    );
+  }
+
+  getAtmosphere(): Observable<AtmosphereData> {
+    return idToken(this.auth).pipe(
+      first(),
+      switchMap(token => {
+        if (!token) {
+          throw new Error('User not logged in!');
+        }
+        const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+        return this.http.post<AtmosphereData>(this.atmosphereFunctionUrl, {}, { headers });
       })
     );
   }
@@ -95,6 +115,19 @@ export class ApiService {
         return collectionData(q).pipe(
           map(insights => (insights.length > 0 ? insights[0] as InsightData : null))
         );
+      })
+    );
+  }
+
+  getMemories(): Observable<MemoryData[]> {
+    return this.user$.pipe(
+      switchMap(currentUser => {
+        if (!currentUser) {
+          return of([]); // Return empty array if no user
+        }
+        const memoriesCollection = collection(this.firestore, 'memories');
+        const q = query(memoriesCollection, where('userId', '==', currentUser.uid));
+        return collectionData(q) as Observable<MemoryData[]>;
       })
     );
   }

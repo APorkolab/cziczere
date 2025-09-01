@@ -1,9 +1,9 @@
-import { Component, AfterViewInit, ViewChild, ElementRef, Input, Output, EventEmitter } from '@angular/core';
+import { Component, AfterViewInit, ViewChild, ElementRef, OnDestroy } from '@angular/core';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { ApiService, AtmosphereData, MemoryData } from '../api.service';
-
 import { CommonModule } from '@angular/common';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-garden',
@@ -12,72 +12,172 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule]
 })
-export class GardenComponent implements AfterViewInit {
+export class GardenComponent implements AfterViewInit, OnDestroy {
   @ViewChild('canvas') private canvasRef!: ElementRef;
-  @Input() memories: MemoryData[] = [];
-  @Output() memoryClicked = new EventEmitter<MemoryData>();
+
+  private memories: MemoryData[] = [];
+  private memorySubscription!: Subscription;
+  private atmosphereSubscription!: Subscription;
 
   private camera!: THREE.PerspectiveCamera;
   private scene!: THREE.Scene;
   private renderer!: THREE.WebGLRenderer;
   private controls!: OrbitControls;
   private atmosphere: AtmosphereData | null = null;
+  private memoryMeshes: THREE.Mesh[] = [];
+  private weatherParticles: THREE.Points | null = null;
+
 
   constructor(private apiService: ApiService) {}
 
   ngAfterViewInit(): void {
     this.createScene();
     this.createControls();
-    this.createMemories();
     this.startRenderingLoop();
     this.getAtmosphere();
+    this.getMemories();
+  }
+
+  ngOnDestroy(): void {
+    if (this.memorySubscription) {
+      this.memorySubscription.unsubscribe();
+    }
+    if (this.atmosphereSubscription) {
+      this.atmosphereSubscription.unsubscribe();
+    }
+    // Also dispose of Three.js objects to prevent memory leaks
+    this.renderer.dispose();
+    this.scene.traverse(object => {
+        if (object instanceof THREE.Mesh || object instanceof THREE.Points) {
+            (object as any).geometry.dispose();
+            const material = (object as any).material;
+            if (Array.isArray(material)) {
+                material.forEach(mat => mat.dispose());
+            } else {
+                material.dispose();
+            }
+        }
+    });
   }
 
   private createScene(): void {
     this.scene = new THREE.Scene();
-    // Set a default background color
-    this.scene.background = new THREE.Color(0xabcdef);
+    this.scene.background = new THREE.Color(0xabcdef); // Default color
     this.camera = new THREE.PerspectiveCamera(75, this.getAspectRatio(), 0.1, 1000);
-    this.camera.position.z = 5;
+    this.camera.position.z = 10;
   }
 
   private getAtmosphere(): void {
-    this.apiService.getAtmosphere().subscribe(
-      (data: AtmosphereData) => {
+    this.atmosphereSubscription = this.apiService.getAtmosphere().subscribe({
+      next: (data: AtmosphereData) => {
         this.atmosphere = data;
-        this.scene.background = new THREE.Color(data.backgroundColor);
-        // TODO: Implement weather effects based on data.weather
+        if (this.scene) {
+          this.scene.background = new THREE.Color(data.backgroundColor);
+          this.createWeatherParticles(data.weather);
+        }
         console.log('Atmosphere data:', data);
       },
-      (error) => {
-        console.error('Error getting atmosphere:', error);
-      }
-    );
+      error: (error) => console.error('Error getting atmosphere:', error)
+    });
   }
 
-  private createControls(): void {
-    const canvas = this.canvasRef.nativeElement;
-    this.renderer = new THREE.WebGLRenderer({ canvas });
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-    this.controls.enableDamping = true;
+  private getMemories(): void {
+    this.memorySubscription = this.apiService.getMemories().subscribe({
+      next: (memories: MemoryData[]) => {
+        this.memories = memories;
+        this.recreateMemoryVisuals();
+      },
+      error: (error) => console.error('Error getting memories:', error)
+    });
   }
 
-  private createMemories(): void {
+  private createWeatherParticles(weather: string): void {
+    if (this.weatherParticles) {
+      this.scene.remove(this.weatherParticles);
+      this.weatherParticles.geometry.dispose();
+      (this.weatherParticles.material as THREE.Material).dispose();
+      this.weatherParticles = null;
+    }
+
+    if (weather !== 'Rainy' && weather !== 'Snowy') {
+      return;
+    }
+
+    const particleCount = 5000;
+    const vertices = [];
+    for (let i = 0; i < particleCount; i++) {
+        const x = Math.random() * 200 - 100;
+        const y = Math.random() * 100 - 50;
+        const z = Math.random() * 100 - 50;
+        vertices.push(x, y, z);
+    }
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+
+    const material = new THREE.PointsMaterial({
+        color: 0xffffff,
+        size: weather === 'Snowy' ? 0.2 : 0.1,
+        transparent: true,
+        opacity: 0.7
+    });
+
+    this.weatherParticles = new THREE.Points(geometry, material);
+    this.scene.add(this.weatherParticles);
+}
+
+
+  private recreateMemoryVisuals(): void {
+    // Clear existing meshes from the scene
+    this.memoryMeshes.forEach(mesh => this.scene.remove(mesh));
+    this.memoryMeshes = []; // Clear the array
+
     const textureLoader = new THREE.TextureLoader();
     const geometry = new THREE.PlaneGeometry(1, 1);
 
     this.memories.forEach((memory, index) => {
       const texture = textureLoader.load(memory.imageUrl);
-      const material = new THREE.MeshBasicMaterial({ map: texture });
+      const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
       const plane = new THREE.Mesh(geometry, material);
 
-      const x = (index % 5 - 2) * 2;
-      const y = (Math.floor(index / 5) - 2) * -2;
+      // Associate memory data with the mesh for hit-testing
+      plane.userData = { memory };
+
+      // Simple spiral layout (Phyllotaxis)
+      const c = 2; // Scaling factor
+      const angle = index * 137.5; // Golden angle
+      const radius = c * Math.sqrt(index);
+      const x = radius * Math.cos(angle * Math.PI / 180);
+      const y = radius * Math.sin(angle * Math.PI / 180);
+
       plane.position.set(x, y, 0);
 
       this.scene.add(plane);
+      this.memoryMeshes.push(plane);
     });
+  }
+
+  private createControls(): void {
+    const canvas = this.canvasRef.nativeElement;
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+    this.controls.enableDamping = true;
+  }
+
+  private animateWeather(): void {
+    if (this.weatherParticles) {
+        const positions = this.weatherParticles.geometry.attributes.position.array as Float32Array;
+        const speed = this.atmosphere?.weather === 'Snowy' ? -0.05 : -0.2;
+
+        for (let i = 1; i < positions.length; i += 3) {
+            positions[i] += speed; // Move down
+            if (positions[i] < -50) {
+                positions[i] = 50; // Reset to top
+            }
+        }
+        this.weatherParticles.geometry.attributes.position.needsUpdate = true;
+    }
   }
 
   private startRenderingLoop(): void {
@@ -85,6 +185,7 @@ export class GardenComponent implements AfterViewInit {
     (function render() {
       requestAnimationFrame(render);
       component.controls.update();
+      component.animateWeather();
       component.renderer.render(component.scene, component.camera);
     }());
   }
@@ -103,56 +204,15 @@ export class GardenComponent implements AfterViewInit {
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(mouse, this.camera);
 
-    const intersects = raycaster.intersectObjects(this.scene.children);
+    const intersects = raycaster.intersectObjects(this.memoryMeshes);
 
     if (intersects.length > 0) {
-      const clickedObject = intersects[0].object;
-      const memoryIndex = this.scene.children.indexOf(clickedObject) - 1; // -1 for the light
-      if (this.memories[memoryIndex]) {
-        this.memoryClicked.emit(this.memories[memoryIndex]);
+      const clickedObject = intersects[0].object as THREE.Mesh;
+      const memory = clickedObject.userData['memory'] as MemoryData;
+      if (memory) {
+        // TODO: Show memory details in a more elegant way (e.g., an overlay)
+        alert(`Memory: ${memory.userText}`);
       }
     }
-  }
-
-  exportAsPoster(): void {
-    const posterWidth = 4096;
-    const posterHeight = 4096;
-
-    const posterRenderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
-    posterRenderer.setSize(posterWidth, posterHeight);
-
-    // Temporarily add the renderer to the DOM to ensure it has a valid context
-    posterRenderer.domElement.style.position = 'absolute';
-    posterRenderer.domElement.style.left = '-9999px';
-    document.body.appendChild(posterRenderer.domElement);
-
-
-    // Use a new camera to fit the entire garden in the view
-    const boundingBox = new THREE.Box3().setFromObject(this.scene);
-    const center = boundingBox.getCenter(new THREE.Vector3());
-    const size = boundingBox.getSize(new THREE.Vector3());
-    const maxDim = Math.max(size.x, size.y, size.z);
-    const fov = this.camera.fov * (Math.PI / 180);
-    let cameraZ = Math.abs(maxDim / 2 * Math.tan(fov * 2));
-    cameraZ *= 1.1; // Add a bit of padding
-
-    const posterCamera = new THREE.PerspectiveCamera(
-      this.camera.fov,
-      posterWidth / posterHeight,
-      0.1,
-      1000
-    );
-    posterCamera.position.set(center.x, center.y, center.z + cameraZ);
-    posterCamera.lookAt(center);
-
-    posterRenderer.render(this.scene, posterCamera);
-
-    const link = document.createElement('a');
-    link.download = 'kert-poszter.png';
-    link.href = posterRenderer.domElement.toDataURL('image/png');
-    link.click();
-
-    // Clean up the temporary renderer
-    document.body.removeChild(posterRenderer.domElement);
   }
 }
