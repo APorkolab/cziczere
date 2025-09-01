@@ -29,6 +29,7 @@ public class GetInsightAudio implements HttpFunction {
     private final Firestore db;
     private final Storage storage;
     private final FirebaseAuth firebaseAuth;
+    private final TextToSpeechClientFactory textToSpeechClientFactory;
 
     public GetInsightAudio() throws Exception {
         // This constructor will be used by the Functions Framework
@@ -36,13 +37,15 @@ public class GetInsightAudio implements HttpFunction {
         this.db = com.google.cloud.firestore.FirestoreOptions.getDefaultInstance().getService();
         this.storage = com.google.cloud.storage.StorageOptions.getDefaultInstance().getService();
         this.firebaseAuth = FirebaseAuth.getInstance();
+        this.textToSpeechClientFactory = new DefaultTextToSpeechClientFactory();
     }
 
     // Constructor for testing
-    GetInsightAudio(Firestore db, Storage storage, FirebaseAuth firebaseAuth) {
+    GetInsightAudio(Firestore db, Storage storage, FirebaseAuth firebaseAuth, TextToSpeechClientFactory textToSpeechClientFactory) {
         this.db = db;
         this.storage = storage;
         this.firebaseAuth = firebaseAuth;
+        this.textToSpeechClientFactory = textToSpeechClientFactory;
     }
 
 
@@ -109,7 +112,7 @@ public class GetInsightAudio implements HttpFunction {
 
     private byte[] synthesizeText(String text) throws Exception {
         // Instantiates a client
-        try (TextToSpeechClient textToSpeechClient = TextToSpeechClient.create()) {
+        try (TextToSpeechClient textToSpeechClient = textToSpeechClientFactory.create()) {
             // Set the text input to be synthesized
             SynthesisInput input = SynthesisInput.newBuilder().setText(text).build();
 

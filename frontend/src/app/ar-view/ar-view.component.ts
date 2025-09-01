@@ -1,4 +1,4 @@
-import { Component, OnInit, ElementRef, ViewChild, OnDestroy, inject } from '@angular/core';
+import { Component, OnInit, ElementRef, ViewChild, OnDestroy, inject, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import * as THREE from 'three';
 import { ARButton } from 'three/examples/jsm/webxr/ARButton.js';
@@ -28,6 +28,10 @@ export class ArViewComponent implements OnInit, OnDestroy {
   private reticle!: THREE.Mesh;
   private hitTestSource: THREE.XRHitTestSource | null = null;
   private hitTestSourceRequested = false;
+  private placedObjects: { mesh: THREE.Mesh, memory: MemoryData }[] = [];
+  private raycaster = new THREE.Raycaster();
+
+  @Output() memorySelected = new EventEmitter<MemoryData>();
 
   ngOnInit(): void {
     this.initXR();
@@ -71,6 +75,11 @@ export class ArViewComponent implements OnInit, OnDestroy {
       if (frame) {
         this.updateHitTest(frame);
       }
+      // Make all placed objects face the camera
+      this.placedObjects.forEach(object => {
+        object.quaternion.copy(this.camera.quaternion);
+      });
+
       this.renderer.render(this.scene, this.camera);
     });
   }
@@ -94,6 +103,19 @@ export class ArViewComponent implements OnInit, OnDestroy {
   }
 
   private onSelect(): void {
+    // First, try to interact with existing objects
+    this.raycaster.setFromCamera({ x: 0, y: 0 }, this.camera);
+    const intersects = this.raycaster.intersectObjects(this.placedObjects.map(p => p.mesh));
+
+    if (intersects.length > 0) {
+      const firstIntersected = this.placedObjects.find(p => p.mesh === intersects[0].object);
+      if (firstIntersected) {
+        this.memorySelected.emit(firstIntersected.memory);
+        return; // Stop after finding the first object
+      }
+    }
+
+    // If no object was hit, try to place a new one
     if (this.reticle.visible && this.currentMemory) {
         const memory = this.currentMemory;
 
@@ -102,15 +124,13 @@ export class ArViewComponent implements OnInit, OnDestroy {
             const geometry = new THREE.PlaneGeometry(0.2, 0.2); // Adjust size as needed
             const plane = new THREE.Mesh(geometry, material);
             plane.position.setFromMatrixPosition(this.reticle.matrix);
-            // Orient the plane to face the camera
-            plane.quaternion.copy(this.camera.quaternion);
             this.scene.add(plane);
+            this.placedObjects.push({ mesh: plane, memory: memory }); // Add to our list of objects
         };
 
         if (memory.imageUrl) {
             this.textureLoader.load(memory.imageUrl, createMemoryPlane);
         } else {
-            // Fallback for memories without an image: create a canvas texture with text
             const canvas = this.createTextCanvas(memory.userText);
             const texture = new THREE.CanvasTexture(canvas);
             createMemoryPlane(texture);

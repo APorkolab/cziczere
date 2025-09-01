@@ -21,7 +21,8 @@ In a fast-paced digital world, Cziczere offers a space for quiet reflection. The
     
 -   **Interactive Exploration**: Users can navigate their 3D garden, and click on memories to see the associated text. The garden layout is a beautiful and organic spiral.
     
--   **(Planned) The Gardener's Assistant**: An AI-powered conversational agent that helps users find patterns in their thoughts and offers gentle prompts for reflection.
+-   **The Gardener's Assistant**: An AI-powered conversational agent that helps users find patterns in their thoughts and offers gentle prompts for reflection. This includes a "Weekly Summary" feature that provides a poetic overview of the user's recent memories.
+-   **AR/VR Mode**: Place your memories in your own room and view them in augmented reality.
 -   **Comprehensive Backend Unit Tests**: The backend functions are now covered by a suite of unit tests using JUnit and Mockito to ensure reliability and correctness.
 
 ## ## 🛠️ Tech Stack & Architecture

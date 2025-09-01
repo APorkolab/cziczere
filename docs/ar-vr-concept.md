@@ -38,19 +38,7 @@ The prototype was implemented by creating a new standalone Angular component (`a
 
 -   **Feasibility:** The prototype confirms that creating a basic AR experience that displays the user's garden images in their real-world environment is **highly feasible** with the current technology stack.
 -   **Performance:** Loading and displaying a moderate number of textured planes (e.g., 10-20) is performant on modern mobile devices. Performance may degrade with a very large number of high-resolution textures.
--   **Hit-Testing (Next Step):** The current prototype places objects at fixed coordinates. The next crucial step for a real feature is to implement **hit-testing**. This allows the user to tap on a real-world surface (like a floor or table) to place the memory objects. The tutorial I researched provides a clear path for this using `renderer.xr.getHitTestResults()`.
--   **User Experience (UX):** The current UX is minimal. A full implementation would require more thought into:
-    *   How users arrange their AR garden.
-    *   How to interact with the memory planes (e.g., tap to view details).
-    *   Providing better visual feedback and instructions.
+-   **Hit-Testing:** The AR view uses hit-testing to allow users to place memories on real-world surfaces like floors and tables.
+-   **Tap-to-View:** Users can tap on a memory plane in the AR scene to view the associated memory details, including the original text, emotions, and the AI-generated image prompt.
+-   **User Experience (UX):** The memory planes always face the camera, ensuring that the user can always see the memory's image, regardless of their position.
 -   **Angular Integration:** Integrating Three.js into an Angular component is straightforward. The `ViewChild` and `ElementRef` decorators are used to get a handle on the container div for the renderer. Component lifecycle hooks (`ngOnInit`, `ngOnDestroy`) are essential for setting up and tearing down the Three.js scene correctly to avoid memory leaks.
-
-## 4. Proposed Next Steps for Full Feature
-
-1.  **Implement Hit-Testing:** Use the WebXR Hit Test API to allow users to place memories on real surfaces.
-2.  **Improve Placement Logic:** Develop a more sophisticated algorithm for arranging the memory planes in the AR space, perhaps based on their real positions in the 2D garden.
-3.  **Add Interactivity:** Allow users to tap on memory planes in AR to view the associated text and emotions.
-4.  **Refine UI/UX:** Create a dedicated AR mode UI with clear instructions and controls.
-5.  **Performance Optimization:** Implement texture optimization and object pooling for gardens with a large number of memories.
-
-The prototype successfully proves the concept and provides a solid foundation for building out the full AR/VR feature.

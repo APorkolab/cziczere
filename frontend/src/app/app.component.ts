@@ -79,12 +79,12 @@ export class AppComponent implements OnInit {
     );
   }
 
-  requestInsight(): void {
+  requestInsight(type: 'insight' | 'weekly' | 'monthly' = 'insight'): void {
     this.isInsightLoading$.next(true);
     this.insightError$.next(null);
     this.latestInsight$ = of(undefined);
 
-    this.apiService.requestInsight().pipe(
+    this.apiService.requestInsight(type).pipe(
       catchError(err => {
         console.error('Error requesting new insight:', err);
         this.insightError$.next('Failed to generate a new insight. There may be no memories to analyze yet.');
@@ -122,5 +122,9 @@ export class AppComponent implements OnInit {
   exitArMode() {
     this.arStateService.setSelectedMemory(null);
     this.isArViewVisible = false;
+  }
+
+  onArMemorySelected(memory: MemoryData) {
+    this.selectedMemoryForDetail = memory;
   }
 }

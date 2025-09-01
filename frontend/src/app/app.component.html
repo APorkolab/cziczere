@@ -26,13 +26,23 @@
     <app-garden (memoryClicked)="onMemoryClicked($event)"></app-garden>
 
     <div class="gardener-actions">
-      <button (click)="requestInsight()" [disabled]="isInsightLoading$ | async">
+      <button (click)="requestInsight('insight')" [disabled]="isInsightLoading$ | async">
         <ng-container *ngIf="!(isInsightLoading$ | async); else insightLoading">
-          Ask the Gardener for an Insight
+          Ask for Insight
         </ng-container>
         <ng-template #insightLoading>
           <div class="spinner-small"></div>
-          The Gardener is reflecting...
+          Reflecting...
+        </ng-template>
+      </button>
+
+      <button (click)="requestInsight('weekly')" [disabled]="isInsightLoading$ | async">
+        <ng-container *ngIf="!(isInsightLoading$ | async); else insightLoading">
+          Get Weekly Summary
+        </ng-container>
+        <ng-template #insightLoading>
+          <div class="spinner-small"></div>
+          Summarizing...
         </ng-template>
       </button>
 
@@ -65,5 +75,5 @@
 
 <div class="ar-view-container" *ngIf="isArViewVisible">
   <button class="close-ar-button" (click)="exitArMode()">Exit AR</button>
-  <app-ar-view></app-ar-view>
+  <app-ar-view (memorySelected)="onArMemorySelected($event)"></app-ar-view>
 </div>

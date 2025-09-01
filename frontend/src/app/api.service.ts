@@ -102,7 +102,7 @@ export class ApiService {
     );
   }
 
-  requestInsight(): Observable<InsightData> {
+  requestInsight(type: 'insight' | 'weekly' | 'monthly' = 'insight'): Observable<InsightData> {
     return idToken(this.auth).pipe(
       first(),
       switchMap(token => {
@@ -110,7 +110,8 @@ export class ApiService {
           throw new Error('User not logged in!');
         }
         const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
-        return this.http.post<InsightData>(this.analyzeFunctionUrl, {}, { headers });
+        const params = { type };
+        return this.http.post<InsightData>(this.analyzeFunctionUrl, {}, { headers, params });
       })
     );
   }
