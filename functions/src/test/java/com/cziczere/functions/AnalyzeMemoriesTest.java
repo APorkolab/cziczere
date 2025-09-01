@@ -68,17 +68,18 @@ class AnalyzeMemoriesTest {
         // Arrange
         String testUserId = "test-user-123";
         List<MemoryData> memories = List.of(
-                new MemoryData(testUserId, "Loved walking my dog today.", "prompt1", "url1", 1L),
-                new MemoryData(testUserId, "My dog is the best.", "prompt2", "url2", 2L)
+                new MemoryData(testUserId, "Loved walking my dog today.", "prompt1", "url1", 1L, "memory"),
+                new MemoryData(testUserId, "My dog is the best.", "prompt2", "url2", 2L, "memory")
         );
         String expectedInsight = "It seems that your dog brings you a lot of joy.";
+        when(request.getReader()).thenReturn(new java.io.BufferedReader(new java.io.StringReader("{}")));
 
         // Mock the authentication
         doReturn(testUserId).when(analyzeMemories).getUserIdFromAuthToken(request);
         // Mock the data fetching
         doReturn(memories).when(analyzeMemories).getMemoriesForUser(testUserId);
         // Mock the AI generation
-        doReturn(expectedInsight).when(analyzeMemories).generateInsightWithGemini(memories);
+        doReturn(expectedInsight).when(analyzeMemories).generateStandardInsight(memories);
         // Mock the save operation
         doNothing().when(analyzeMemories).saveInsightToFirestore(any(InsightData.class));
 
@@ -100,9 +101,43 @@ class AnalyzeMemoriesTest {
     }
 
     @Test
+    void service_shouldReturnWeeklySummaryWithCollage_whenRequested() throws Exception {
+        // Arrange
+        String testUserId = "test-user-123";
+        // A minimal valid 1x1 PNG in base64
+        String fakeBase64Image = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+        List<MemoryData> memories = List.of(
+                new MemoryData(testUserId, "Weekly memory 1", "p1", fakeBase64Image, 1L, "memory"),
+                new MemoryData(testUserId, "Weekly memory 2", "p2", fakeBase64Image, 2L, "memory")
+        );
+        String expectedSummary = "A summary of your week.";
+        String requestJson = new Gson().toJson(new RequestData(null, "weekly_summary"));
+        when(request.getReader()).thenReturn(new java.io.BufferedReader(new java.io.StringReader(requestJson)));
+
+        doReturn(testUserId).when(analyzeMemories).getUserIdFromAuthToken(request);
+        doReturn(memories).when(analyzeMemories).getRecentMemoriesForUser(testUserId);
+        doReturn(expectedSummary).when(analyzeMemories).generateWeeklySummary(anyList());
+        doNothing().when(analyzeMemories).saveInsightToFirestore(any(InsightData.class));
+
+        // Act
+        analyzeMemories.service(request, response);
+
+        // Assert
+        ArgumentCaptor<InsightData> insightCaptor = ArgumentCaptor.forClass(InsightData.class);
+        verify(analyzeMemories).saveInsightToFirestore(insightCaptor.capture());
+
+        assertEquals(testUserId, insightCaptor.getValue().userId());
+        assertEquals(expectedSummary, insightCaptor.getValue().text());
+        assertTrue(insightCaptor.getValue().collageUrl().startsWith("data:image/png;base64,"));
+
+        verify(response).setStatusCode(200, "OK");
+    }
+
+    @Test
     void service_shouldReturnNotFound_whenNoMemoriesExist() throws Exception {
         // Arrange
         String testUserId = "test-user-123";
+        when(request.getReader()).thenReturn(new java.io.BufferedReader(new java.io.StringReader("{}")));
         doReturn(testUserId).when(analyzeMemories).getUserIdFromAuthToken(request);
         doReturn(List.of()).when(analyzeMemories).getMemoriesForUser(testUserId);
 
@@ -112,7 +147,7 @@ class AnalyzeMemoriesTest {
         // Assert
         verify(response).setStatusCode(404, "Not Found");
         assertEquals("{\"message\":\"No memories found to analyze.\"}", responseWriter.toString());
-        verify(analyzeMemories, never()).generateInsightWithGemini(any());
+        verify(analyzeMemories, never()).generateStandardInsight(any());
         verify(analyzeMemories, never()).saveInsightToFirestore(any());
     }
 
