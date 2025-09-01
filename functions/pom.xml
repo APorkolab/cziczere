@@ -9,10 +9,9 @@
   <packaging>jar</packaging>
 
   <properties>
-    <maven.compiler.source>17</maven.compiler.source>
-    <maven.compiler.target>17</maven.compiler.target>
-    <google.cloud.bom.version>26.40.0</google.cloud.bom.version>
-    <gson.version>2.10.1</gson.version>
+      <maven.compiler.source>17</maven.compiler.source>
+      <maven.compiler.target>17</maven.compiler.target>
+      <google-cloud-bom.version>26.33.0</google-cloud-bom.version>
   </properties>
 
   <dependencyManagement>
@@ -20,7 +19,7 @@
       <dependency>
         <groupId>com.google.cloud</groupId>
         <artifactId>libraries-bom</artifactId>
-        <version>${google.cloud.bom.version}</version>
+        <version>${google-cloud-bom.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -36,24 +35,59 @@
       <scope>provided</scope>
     </dependency>
 
-    <!-- Google Cloud AI/ML Dependencies -->
+    <!-- Google Cloud Vertex AI for Gemini & Imagen -->
     <dependency>
       <groupId>com.google.cloud</groupId>
       <artifactId>google-cloud-vertexai</artifactId>
     </dependency>
 
-    <!-- Google Cloud Database Dependencies -->
+    <!-- Google Cloud Firestore for database -->
     <dependency>
       <groupId>com.google.cloud</groupId>
       <artifactId>google-cloud-firestore</artifactId>
     </dependency>
 
-    <!-- JSON Parsing -->
+    <!-- JSON parsing library -->
     <dependency>
       <groupId>com.google.code.gson</groupId>
       <artifactId>gson</artifactId>
-      <version>${gson.version}</version>
+      <version>2.10.1</version>
     </dependency>
+
+    <!-- Required for the function to run -->
+    <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-simple</artifactId>
+        <version>2.0.13</version>
+        <scope>runtime</scope>
+    </dependency>
+
+    <!-- Testing Dependencies -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <version>5.10.2</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <version>5.10.2</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <version>5.12.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-junit-jupiter</artifactId>
+      <version>5.12.0</version>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 
   <build>
