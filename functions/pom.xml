@@ -35,13 +35,7 @@
       <scope>provided</scope>
     </dependency>
 
-    <!-- Google Cloud AI Platform for Imagen -->
-    <dependency>
-      <groupId>com.google.cloud</groupId>
-      <artifactId>google-cloud-aiplatform</artifactId>
-    </dependency>
-
-    <!-- Google Cloud Vertex AI for Gemini -->
+    <!-- Google Cloud Vertex AI for Gemini & Imagen -->
     <dependency>
       <groupId>com.google.cloud</groupId>
       <artifactId>google-cloud-vertexai</artifactId>
@@ -87,25 +81,11 @@
       <version>5.12.0</version>
       <scope>test</scope>
     </dependency>
-    <!-- Needed for mocking static methods -->
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-inline</artifactId>
-      <version>5.2.0</version>
-      <scope>test</scope>
-    </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-junit-jupiter</artifactId>
       <version>5.12.0</version>
       <scope>test</scope>
-    </dependency>
-
-    <!-- Firebase Admin SDK for Authentication -->
-    <dependency>
-      <groupId>com.google.firebase</groupId>
-      <artifactId>firebase-admin</artifactId>
-      <version>9.3.0</version>
     </dependency>
 
   </dependencies>
