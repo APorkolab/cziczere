@@ -57,9 +57,13 @@
 </div>
 
 <app-memory-detail
-  *ngIf="selectedMemory"
-  [memory]="selectedMemory"
-  (close)="onDetailClose()">
+  *ngIf="selectedMemoryForDetail"
+  [memory]="selectedMemoryForDetail"
+  (close)="onDetailClose()"
+  (enterAr)="enterArModeForMemory($event)">
 </app-memory-detail>
 
-<app-ar-view *ngIf="isArViewVisible"></app-ar-view>
+<div class="ar-view-container" *ngIf="isArViewVisible">
+  <button class="close-ar-button" (click)="exitArMode()">Exit AR</button>
+  <app-ar-view></app-ar-view>
+</div>

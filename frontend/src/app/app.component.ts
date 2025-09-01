@@ -7,19 +7,22 @@ import { catchError, switchMap, tap } from 'rxjs/operators';
 import { GardenComponent } from './garden/garden.component';
 import { MemoryCreateComponent } from './memory-create/memory-create.component';
 import { InsightDisplayComponent } from './insight-display/insight-display.component';
-import { MemoryDetailComponent } from './memory-detail/memory-detail.component'; // Import MemoryDetailComponent
+import { MemoryDetailComponent } from './memory-detail/memory-detail.component';
+import { ArViewComponent } from './ar-view/ar-view.component';
 import { ApiService, InsightData, MemoryData } from './api.service';
+import { ArStateService } from './ar-state.service';
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
   standalone: true,
-  imports: [CommonModule, GardenComponent, MemoryCreateComponent, InsightDisplayComponent, MemoryDetailComponent] // Add MemoryDetailComponent
+  imports: [CommonModule, GardenComponent, MemoryCreateComponent, InsightDisplayComponent, MemoryDetailComponent, ArViewComponent]
 })
 export class AppComponent implements OnInit {
   private auth: Auth = inject(Auth);
   private apiService: ApiService = inject(ApiService);
+  private arStateService: ArStateService = inject(ArStateService);
 
   @ViewChild(GardenComponent) gardenComponent!: GardenComponent;
 
@@ -27,11 +30,12 @@ export class AppComponent implements OnInit {
 
   memories$: Observable<MemoryData[]>;
   latestInsight$: Observable<InsightData | null | undefined>;
-  selectedMemory: MemoryData | null = null;
+  selectedMemoryForDetail: MemoryData | null = null;
 
   isLoading$ = new BehaviorSubject<boolean>(false);
   isInsightLoading$ = new BehaviorSubject<boolean>(false);
   isExporting$ = new BehaviorSubject<boolean>(false);
+  isArViewVisible = false;
   insightError$ = new BehaviorSubject<string | null>(null);
 
   constructor() {
@@ -102,10 +106,21 @@ export class AppComponent implements OnInit {
   }
 
   onMemoryClicked(memory: MemoryData) {
-    this.selectedMemory = memory;
+    this.selectedMemoryForDetail = memory;
   }
 
   onDetailClose() {
-    this.selectedMemory = null;
+    this.selectedMemoryForDetail = null;
+  }
+
+  enterArModeForMemory(memory: MemoryData) {
+    this.arStateService.setSelectedMemory(memory);
+    this.isArViewVisible = true;
+    this.onDetailClose(); // Close detail view if it's open
+  }
+
+  exitArMode() {
+    this.arStateService.setSelectedMemory(null);
+    this.isArViewVisible = false;
   }
 }

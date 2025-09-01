@@ -12,6 +12,7 @@ import { MemoryData } from '../api.service';
 export class MemoryDetailComponent {
   @Input() memory: MemoryData | null = null;
   @Output() close = new EventEmitter<void>();
+  @Output() enterAr = new EventEmitter<MemoryData>();
 
   get emotionsArray() {
     if (!this.memory?.emotions) {
@@ -22,5 +23,11 @@ export class MemoryDetailComponent {
 
   onClose() {
     this.close.emit();
+  }
+
+  onEnterAr() {
+    if (this.memory) {
+      this.enterAr.emit(this.memory);
+    }
   }
 }
