@@ -101,6 +101,46 @@ button:hover {
   color: #666;
 }
 
+.gardener-actions {
+  display: flex;
+  justify-content: center;
+  margin: 2rem 0;
+}
+
+.gardener-actions button {
+  background-color: #38761d; /* A deep, earthy green */
+  color: white;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  font-size: 1rem;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.gardener-actions button:hover:not(:disabled) {
+  background-color: #2a5715;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.gardener-actions button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.spinner-small {
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #38761d;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  animation: spin 1s linear infinite;
+}
+
 .memory-result .user-text {
   font-weight: bold;
 }

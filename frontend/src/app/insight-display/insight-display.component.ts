@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { InsightData } from '../api.service';
 import { CommonModule } from '@angular/common';
 
@@ -11,13 +11,4 @@ import { CommonModule } from '@angular/common';
 })
 export class InsightDisplayComponent {
   @Input() insight: InsightData | null = null;
-  @Output() requestInsight = new EventEmitter<'weekly_summary' | 'monthly_insight'>();
-
-  requestWeeklySummary(): void {
-    this.requestInsight.emit('weekly_summary');
-  }
-
-  requestMonthlyInsight(): void {
-    this.requestInsight.emit('monthly_insight');
-  }
 }
