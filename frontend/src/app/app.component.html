@@ -20,7 +20,7 @@
       <div class="spinner"></div>
     </div>
 
-    <app-garden-canvas [memories]="memories$ | async"></app-garden-canvas>
+    <app-garden [memories]="(memories$ | async) || []" (memoryClicked)="onMemoryClicked($event)"></app-garden>
 
     <div class="gardener-actions">
       <button (click)="requestInsight()" [disabled]="isInsightLoading$ | async">
