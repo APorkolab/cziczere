@@ -54,6 +54,7 @@ public class GenerateMemoryPlant implements HttpFunction {
     private final Firestore db;
     private final VertexAI vertexAI;
     private final Storage storage;
+    private final FirebaseAuth firebaseAuth;
 
     private static final String GCS_BUCKET_NAME = System.getenv().getOrDefault("GCS_BUCKET_NAME", "your-gcs-bucket-name");
 
@@ -83,13 +84,15 @@ public class GenerateMemoryPlant implements HttpFunction {
         this.db = FirestoreOptions.getDefaultInstance().getService();
         this.vertexAI = new VertexAI(PROJECT_ID, REGION);
         this.storage = StorageOptions.newBuilder().setProjectId(PROJECT_ID).build().getService();
+        this.firebaseAuth = FirebaseAuth.getInstance();
     }
 
     // This constructor is used for testing, allowing injection of mocks.
-    GenerateMemoryPlant(Firestore db, VertexAI vertexAI, Storage storage) {
+    GenerateMemoryPlant(Firestore db, VertexAI vertexAI, Storage storage, FirebaseAuth firebaseAuth) {
         this.db = db;
         this.vertexAI = vertexAI;
         this.storage = storage;
+        this.firebaseAuth = firebaseAuth;
     }
 
     // Custom exception for auth errors
@@ -158,7 +161,7 @@ public class GenerateMemoryPlant implements HttpFunction {
 
         String idToken = authHeader.get().substring(7);
         try {
-            FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(idToken);
+            FirebaseToken decodedToken = this.firebaseAuth.verifyIdToken(idToken);
             return decodedToken.getUid();
         } catch (FirebaseAuthException e) {
             throw new AuthException("Invalid Firebase ID token: " + e.getMessage());
