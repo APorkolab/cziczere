@@ -89,7 +89,7 @@ class GenerateMemoryPlantTest {
     void service_shouldReturnSuccess_onValidRequest() throws Exception {
         // Given
         String inputText = "A beautiful day in the park";
-        String requestJson = new Gson().toJson(new RequestData(inputText));
+        String requestJson = new Gson().toJson(new RequestData(inputText, null));
         BufferedReader reader = new BufferedReader(new StringReader(requestJson));
         when(request.getReader()).thenReturn(reader);
         when(db.collection(anyString())).thenReturn(collectionReference);
