@@ -1,6 +1,7 @@
 import { Component, AfterViewInit, ViewChild, ElementRef, Input, Output, EventEmitter } from '@angular/core';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { VRButton } from 'three/examples/jsm/webxr/VRButton.js';
 import { ApiService, AtmosphereData, MemoryData } from '../api.service';
 
 import { CommonModule } from '@angular/common';
@@ -59,6 +60,10 @@ export class GardenComponent implements AfterViewInit {
     const canvas = this.canvasRef.nativeElement;
     this.renderer = new THREE.WebGLRenderer({ canvas });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
+
+    this.renderer.xr.enabled = true;
+    this.canvasRef.nativeElement.parentElement.appendChild(VRButton.createButton(this.renderer));
+
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
   }
@@ -81,12 +86,10 @@ export class GardenComponent implements AfterViewInit {
   }
 
   private startRenderingLoop(): void {
-    const component: GardenComponent = this;
-    (function render() {
-      requestAnimationFrame(render);
-      component.controls.update();
-      component.renderer.render(component.scene, component.camera);
-    }());
+    this.renderer.setAnimationLoop(() => {
+      this.controls.update();
+      this.renderer.render(this.scene, this.camera);
+    });
   }
 
   private getAspectRatio(): number {
