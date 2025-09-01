@@ -22,6 +22,7 @@ export interface InsightData {
 export interface AtmosphereData {
   weather: string;
   backgroundColor: string;
+  musicUrl: string;
 }
 
 @Injectable({

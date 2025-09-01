@@ -42,10 +42,10 @@ public class GetAtmosphere implements HttpFunction {
     private final VertexAI vertexAI;
 
     // Simple record for the response
-    public record AtmosphereData(String weather, String backgroundColor) {}
+    public record AtmosphereData(String weather, String backgroundColor, String musicUrl) {}
 
-    // Local record to ensure compatibility with the data being read from Firestore
-    private record MemoryData(String userText) {}
+    // The MemoryData record is defined in its own file.
+    // This local definition is no longer needed.
 
     static {
         // Static initializer for Firebase Admin SDK
@@ -94,7 +94,7 @@ public class GetAtmosphere implements HttpFunction {
                 List<MemoryData> memories = getRecentMemoriesForUser(userId);
                 if (memories.isEmpty()) {
                     // Return a default atmosphere if no recent memories
-                    AtmosphereData defaultAtmosphere = new AtmosphereData("Clear", "#87CEEB"); // Sky Blue
+                    AtmosphereData defaultAtmosphere = new AtmosphereData("Clear", "#87CEEB", "https://storage.googleapis.com/cziczere-music/sunny.mp3"); // Sky Blue
                     writer.write(gson.toJson(defaultAtmosphere));
                     response.setStatusCode(200);
                     return;
@@ -147,14 +147,14 @@ public class GetAtmosphere implements HttpFunction {
         List<com.google.cloud.firestore.QueryDocumentSnapshot> documents = query.get().get().getDocuments();
 
         return documents.stream()
-                .map(doc -> doc.toObject(MemoryData.class))
+                .map(doc -> doc.toObject(com.cziczere.functions.MemoryData.class))
                 .collect(Collectors.toList());
     }
 
 
-    AtmosphereData generateAtmosphereWithGemini(List<MemoryData> memories) throws IOException {
+    AtmosphereData generateAtmosphereWithGemini(List<com.cziczere.functions.MemoryData> memories) throws IOException {
         String combinedMemories = memories.stream()
-                .map(MemoryData::userText)
+                .map(memory -> "Memory: " + memory.userText() + " (Mood: " + memory.mood() + ")")
                 .collect(Collectors.joining("\n---\n"));
 
         GenerativeModel model = new GenerativeModel("gemini-1.5-flash-001", this.vertexAI);
@@ -162,8 +162,9 @@ public class GetAtmosphere implements HttpFunction {
                 "Analyze the overall sentiment and themes from the memories provided. " +
                 "Based on your analysis, you must choose ONE weather condition from this list: [Clear, Sunny, Rainy, Snowy, Foggy, Stormy]. " +
                 "You must also determine a single HEX color code for the sky that reflects the mood. " +
-                "Your response MUST be a valid JSON object with two keys: 'weather' and 'backgroundColor'. " +
-                "For example: {\"weather\": \"Sunny\", \"backgroundColor\": \"#87CEEB\"}. " +
+                "Finally, select the most fitting background music URL from the following list: [https://storage.googleapis.com/cziczere-music/sunny.mp3, https://storage.googleapis.com/cziczere-music/rain.mp3]. " +
+                "Your response MUST be a valid JSON object with three keys: 'weather', 'backgroundColor', and 'musicUrl'. " +
+                "For example: {\"weather\": \"Sunny\", \"backgroundColor\": \"#87CEEB\", \"musicUrl\": \"https://storage.googleapis.com/cziczere-music/sunny.mp3\"}. " +
                 "Do not add any other text or explanation. Your output must be only the JSON object.";
 
         String fullPrompt = systemPrompt + "\n\nHere are the user's memories:\n" + combinedMemories;
@@ -181,7 +182,7 @@ public class GetAtmosphere implements HttpFunction {
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error generating or parsing atmosphere with Gemini: " + e.getMessage(), e);
             // Provide a fallback/default atmosphere on error
-            return new AtmosphereData("Clear", "#DDDDDD"); // Light grey as a fallback
+            return new AtmosphereData("Clear", "#DDDDDD", "https://storage.googleapis.com/cziczere-music/sunny.mp3"); // Light grey as a fallback
         }
     }
 }
