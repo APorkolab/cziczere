@@ -10,15 +10,11 @@ import { provideFunctions, getFunctions } from '@angular/fire/functions';
 import { AppComponent } from './app.component';
 import { environment } from '../environments/environment';
 import { MemoryCreateComponent } from './memory-create/memory-create.component';
-import { GardenCanvasComponent } from './garden-canvas/garden-canvas.component';
-import { InsightDisplayComponent } from './insight-display/insight-display.component';
 
 @NgModule({
   declarations: [
     AppComponent,
-    MemoryCreateComponent,
-    GardenCanvasComponent,
-    InsightDisplayComponent
+    MemoryCreateComponent
   ],
   imports: [
     BrowserModule,

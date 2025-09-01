@@ -1,8 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { Auth, authState, signInWithPopup, GoogleAuthProvider, signOut, User } from '@angular/fire/auth';
-import { Observable, BehaviorSubject, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
-import { ApiService, MemoryData, InsightData } from './api.service';
+import { Observable, BehaviorSubject } from 'rxjs';
+import { ApiService, MemoryData } from './api.service';
 
 @Component({
   selector: 'app-root',
@@ -12,18 +11,12 @@ import { ApiService, MemoryData, InsightData } from './api.service';
 export class AppComponent {
   private auth: Auth = inject(Auth);
   private api: ApiService = inject(ApiService);
-  public readonly user$: Observable<User | null> = authState(this.auth);
-  public memories$: Observable<MemoryData[]>;
-  public latestInsight$: Observable<InsightData | null>;
+  public readonly user: Observable<User | null> = authState(this.auth);
 
   public latestMemory$ = new BehaviorSubject<MemoryData | null>(null);
   public isLoading$ = new BehaviorSubject<boolean>(false);
-  public isInsightLoading$ = new BehaviorSubject<boolean>(false);
 
-  constructor() {
-    this.memories$ = this.api.getMemories();
-    this.latestInsight$ = this.api.getLatestInsight();
-  }
+  constructor() {}
 
   onMemorySubmit(memoryText: string) {
     this.isLoading$.next(true);
@@ -37,26 +30,6 @@ export class AppComponent {
         console.error('Error creating memory:', err);
         alert('There was an error creating your memory. Please check the console.');
         this.isLoading$.next(false);
-      }
-    });
-  }
-
-  requestInsight() {
-    this.isInsightLoading$.next(true);
-    this.api.requestInsight().pipe(
-      catchError(err => {
-        console.error('Error requesting insight:', err);
-        alert('Could not get an insight. Are there enough memories in your garden?');
-        return of(null); // Return a null observable to complete the stream
-      })
-    ).subscribe({
-      next: () => {
-        // The insight display will update automatically via its real-time listener.
-        this.isInsightLoading$.next(false);
-      },
-      error: () => {
-        // Error is already handled by catchError
-        this.isInsightLoading$.next(false);
       }
     });
   }
