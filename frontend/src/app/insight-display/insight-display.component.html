@@ -1,14 +1,4 @@
-<div class="insight-container" [class.reminder]="insight?.type === 'reminder'">
-  <div *ngIf="insight" class="insight-content">
-    <span class="gardener-icon">
-      <ng-container *ngIf="insight.type === 'reminder'; else defaultIcon">🌱</ng-container>
-      <ng-template #defaultIcon>🧑‍🌾</ng-template>
-    </span>
-    <img *ngIf="insight.collageUrl" [src]="insight.collageUrl" alt="Weekly collage" class="collage-image">
-    <p class="insight-text">"{{ insight.text }}"</p>
-  </div>
-  <div class="button-container">
-    <button (click)="requestWeeklySummary()">Weekly Summary</button>
-    <button (click)="requestMonthlyInsight()">Monthly Insight</button>
-  </div>
+<div *ngIf="insight" class="insight-container">
+  <span class="gardener-icon">🧑‍🌾</span>
+  <p class="insight-text">"{{ insight.text }}"</p>
 </div>

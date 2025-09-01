@@ -1,21 +1,19 @@
 .insight-container {
-  border: 1px solid #ccc;
+  background-color: #f0f4f8; /* A light, calming blue-gray */
+  border-left: 5px solid #4a90e2; /* A friendly blue border */
   padding: 1rem;
-  margin: 1rem;
+  margin: 1.5rem 0;
   border-radius: 8px;
-  background-color: #f9f9f9;
-  text-align: center;
-}
-
-.insight-container.reminder {
-  background-color: #e8f5e9; /* A light green to distinguish reminders */
-}
-
-.insight-content {
   display: flex;
   align-items: center;
   gap: 1rem;
-  margin-bottom: 1rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  transition: all 0.3s ease-in-out;
+}
+
+.insight-container:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.08);
 }
 
 .gardener-icon {
@@ -23,14 +21,9 @@
 }
 
 .insight-text {
+  font-family: 'Georgia', serif;
   font-style: italic;
+  font-size: 1.1rem;
   color: #333;
-}
-
-.collage-image {
-  max-width: 100%;
-  height: auto;
-  border-radius: 4px;
-  margin-bottom: 1rem;
-  border: 1px solid #ddd;
+  margin: 0;
 }
