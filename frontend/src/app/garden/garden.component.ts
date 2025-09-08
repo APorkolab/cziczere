@@ -150,35 +150,8 @@ export class GardenComponent implements AfterViewInit, OnDestroy {
     // If no memories exist, show the central stone/sapling
     if (this.memories.length === 0) {
       this.createEmptyGardenCenter();
-    return canvas;
-  }
-
-  private createEmptyGardenCenter(): void {
-    if (this.emptyGardenCenter) return; // Already exists
-
-    // Create a simple geometric shape representing a "central stone" or "sapling"
-    const geometry = new THREE.ConeGeometry(0.3, 1, 8);
-    const material = new THREE.MeshBasicMaterial({ 
-      color: 0x8b7355, // Brown color for a natural look
-      transparent: true,
-      opacity: 0.7
-    });
-    
-    this.emptyGardenCenter = new THREE.Mesh(geometry, material);
-    this.emptyGardenCenter.position.set(0, -0.3, 0); // Slightly below center
-    this.emptyGardenCenter.userData = { isEmptyCenter: true };
-    
-    this.scene.add(this.emptyGardenCenter);
-  }
-
-  private removeEmptyGardenCenter(): void {
-    if (this.emptyGardenCenter) {
-      this.scene.remove(this.emptyGardenCenter);
-      this.emptyGardenCenter.geometry.dispose();
-      (this.emptyGardenCenter.material as THREE.Material).dispose();
-      this.emptyGardenCenter = null;
+      return;
     }
-  }
 
     // Remove empty garden center if memories exist
     this.removeEmptyGardenCenter();
@@ -292,6 +265,33 @@ export class GardenComponent implements AfterViewInit, OnDestroy {
     // Late night (23-5): Dark purple
     else {
       return 0x2f1b69; // Dark purple
+    }
+  }
+
+  private createEmptyGardenCenter(): void {
+    if (this.emptyGardenCenter) return; // Already exists
+
+    // Create a simple geometric shape representing a "central stone" or "sapling"
+    const geometry = new THREE.ConeGeometry(0.3, 1, 8);
+    const material = new THREE.MeshBasicMaterial({ 
+      color: 0x8b7355, // Brown color for a natural look
+      transparent: true,
+      opacity: 0.7
+    });
+    
+    this.emptyGardenCenter = new THREE.Mesh(geometry, material);
+    this.emptyGardenCenter.position.set(0, -0.3, 0); // Slightly below center
+    this.emptyGardenCenter.userData = { isEmptyCenter: true };
+    
+    this.scene.add(this.emptyGardenCenter);
+  }
+
+  private removeEmptyGardenCenter(): void {
+    if (this.emptyGardenCenter) {
+      this.scene.remove(this.emptyGardenCenter);
+      this.emptyGardenCenter.geometry.dispose();
+      (this.emptyGardenCenter.material as THREE.Material).dispose();
+      this.emptyGardenCenter = null;
     }
   }
 }

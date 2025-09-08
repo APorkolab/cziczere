@@ -10,19 +10,19 @@ import { provideFunctions, getFunctions } from '@angular/fire/functions';
 import { AppComponent } from './app.component';
 import { environment } from '../environments/environment';
 import { MemoryCreateComponent } from './memory-create/memory-create.component';
-import { GardenComponent } from './garden/garden.component';
 import { InsightDisplayComponent } from './insight-display/insight-display.component';
 import { ArViewComponent } from './ar-view/ar-view.component';
+import { GardenComponent } from './garden/garden.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     MemoryCreateComponent,
-    GardenComponent,
     InsightDisplayComponent
   ],
   imports: [
     BrowserModule,
+    GardenComponent,
     ArViewComponent,
     ReactiveFormsModule,
     HttpClientModule,
