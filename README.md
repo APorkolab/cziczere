@@ -49,11 +49,12 @@ Follow these instructions to get the project running on your local machine for d
 Ensure you have the following tools installed on your system:
 
  - Node.js (v18 or later) & npm
- - Angular CLI (npm install -g @angular/cli)   
- - Java JDK (v17 or later) & Maven   
- - Google Cloud SDK (gcloud)   
- - Firebase CLI (npm install -g
-   firebase-tools)
+ - Angular CLI: `npm install -g @angular/cli`
+ - Java JDK (v17 or later) & Maven
+ - Google Cloud SDK (gcloud)
+ - Firebase CLI: `npm install -g firebase-tools`
+
+**Important:** After cloning the repository, run `npm install` in the `frontend` directory to install all required dependencies, including THREE.js for 3D rendering and AR functionality.
 
 ### Setup and Installation
 
