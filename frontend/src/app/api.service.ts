@@ -31,6 +31,11 @@ export interface AtmosphereData {
   soundUrl: string;
 }
 
+export interface PoeticRephrasingResponse {
+  poeticVersion: string;
+  suggestion: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -48,6 +53,7 @@ export class ApiService {
   private atmosphereFunctionUrl = 'http://127.0.0.1:5001/cziczere-ai/us-central1/getAtmosphere';
   private exportGardenFunctionUrl = 'http://127.0.0.1:5001/cziczere-ai/us-central1/exportGarden';
   private insightAudioFunctionUrl = 'http://127.0.0.1:5001/cziczere-ai/us-central1/getInsightAudio';
+  private poeticRephrasingUrl = 'http://127.0.0.1:5001/cziczere-ai/us-central1/poeticRephrasing';
 
 
   getInsightAudioUrl(insightId: string): Observable<{audioUrl: string}> {
@@ -148,6 +154,20 @@ export class ApiService {
         const memoriesCollection = collection(this.firestore, 'memories');
         const q = query(memoriesCollection, where('userId', '==', currentUser.uid));
         return collectionData(q) as Observable<MemoryData[]>;
+      })
+    );
+  }
+
+  getPoeticRephrasing(originalText: string): Observable<PoeticRephrasingResponse> {
+    return idToken(this.auth).pipe(
+      first(),
+      switchMap(token => {
+        if (!token) {
+          throw new Error('User not logged in!');
+        }
+        const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+        const body = { originalText };
+        return this.http.post<PoeticRephrasingResponse>(this.poeticRephrasingUrl, body, { headers });
       })
     );
   }

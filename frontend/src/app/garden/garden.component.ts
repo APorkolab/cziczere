@@ -28,6 +28,7 @@ export class GardenComponent implements AfterViewInit, OnDestroy {
   private memoryMeshes: THREE.Mesh[] = [];
   private weatherParticles: THREE.Points | null = null;
   private audioPlayer = new Audio();
+  private emptyGardenCenter: THREE.Mesh | null = null;
 
 
   constructor(private apiService: ApiService) {}
@@ -65,7 +66,7 @@ export class GardenComponent implements AfterViewInit, OnDestroy {
 
   private createScene(): void {
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0xabcdef); // Default color
+    this.scene.background = new THREE.Color(this.getTimeBasedColor()); // Time-based default color
     this.camera = new THREE.PerspectiveCamera(75, this.getAspectRatio(), 0.1, 1000);
     this.camera.position.z = 10;
   }
@@ -85,8 +86,8 @@ export class GardenComponent implements AfterViewInit, OnDestroy {
       },
       error: (error) => {
         console.error('Error getting atmosphere:', error);
-        // Fallback to default atmosphere
-        this.scene.background = new THREE.Color(0xabcdef);
+        // Fallback to time-based atmosphere instead of fixed color
+        this.scene.background = new THREE.Color(this.getTimeBasedColor());
       }
     });
   }
@@ -145,6 +146,42 @@ export class GardenComponent implements AfterViewInit, OnDestroy {
     // Clear existing meshes from the scene
     this.memoryMeshes.forEach(mesh => this.scene.remove(mesh));
     this.memoryMeshes = []; // Clear the array
+
+    // If no memories exist, show the central stone/sapling
+    if (this.memories.length === 0) {
+      this.createEmptyGardenCenter();
+    return canvas;
+  }
+
+  private createEmptyGardenCenter(): void {
+    if (this.emptyGardenCenter) return; // Already exists
+
+    // Create a simple geometric shape representing a "central stone" or "sapling"
+    const geometry = new THREE.ConeGeometry(0.3, 1, 8);
+    const material = new THREE.MeshBasicMaterial({ 
+      color: 0x8b7355, // Brown color for a natural look
+      transparent: true,
+      opacity: 0.7
+    });
+    
+    this.emptyGardenCenter = new THREE.Mesh(geometry, material);
+    this.emptyGardenCenter.position.set(0, -0.3, 0); // Slightly below center
+    this.emptyGardenCenter.userData = { isEmptyCenter: true };
+    
+    this.scene.add(this.emptyGardenCenter);
+  }
+
+  private removeEmptyGardenCenter(): void {
+    if (this.emptyGardenCenter) {
+      this.scene.remove(this.emptyGardenCenter);
+      this.emptyGardenCenter.geometry.dispose();
+      (this.emptyGardenCenter.material as THREE.Material).dispose();
+      this.emptyGardenCenter = null;
+    }
+  }
+
+    // Remove empty garden center if memories exist
+    this.removeEmptyGardenCenter();
 
     const textureLoader = new THREE.TextureLoader();
     const geometry = new THREE.PlaneGeometry(1, 1);
@@ -225,9 +262,39 @@ export class GardenComponent implements AfterViewInit, OnDestroy {
       const memory = clickedObject.userData['memory'] as MemoryData;
       if (memory) {
         this.memoryClicked.emit(memory);
-      }
     }
   }
+
+  private getTimeBasedColor(): number {
+    const now = new Date();
+    const hour = now.getHours();
+    
+    // Early morning (5-8): Soft pink/orange
+    if (hour >= 5 && hour < 8) {
+      return 0xffd7ba; // Soft peachy dawn
+    }
+    // Morning (8-12): Bright blue
+    else if (hour >= 8 && hour < 12) {
+      return 0x87ceeb; // Sky blue
+    }
+    // Afternoon (12-17): Clear blue
+    else if (hour >= 12 && hour < 17) {
+      return 0xabcdef; // Light blue
+    }
+    // Evening (17-20): Golden hour
+    else if (hour >= 17 && hour < 20) {
+      return 0xffa500; // Golden orange
+    }
+    // Night (20-23): Deep blue
+    else if (hour >= 20 && hour < 23) {
+      return 0x191970; // Midnight blue
+    }
+    // Late night (23-5): Dark purple
+    else {
+      return 0x2f1b69; // Dark purple
+    }
+  }
+}
 
   public exportAsPoster(): void {
     const posterWidth = 4096;

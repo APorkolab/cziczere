@@ -42,6 +42,7 @@ export class AppComponent implements OnInit {
   isArViewVisible = false;
   insightError$ = new BehaviorSubject<string | null>(null);
   memoryError$ = new BehaviorSubject<string | null>(null);
+  showMemoryForm = false; // Controls floating form visibility
 
   constructor() {
     this.memories$ = this.apiService.getMemories();
@@ -65,6 +66,10 @@ export class AppComponent implements OnInit {
     signOut(this.auth);
   }
 
+  toggleMemoryForm() {
+    this.showMemoryForm = !this.showMemoryForm;
+  }
+  
   onMemorySubmit(memoryText: string) {
     this.isLoading$.next(true);
     this.memoryError$.next(null);
@@ -72,6 +77,7 @@ export class AppComponent implements OnInit {
     this.apiService.createMemory(memoryText).subscribe({
       next: (newMemory) => {
         this.isLoading$.next(false);
+        this.showMemoryForm = false; // Hide form after successful submission
         // Also update the user's last active timestamp
         const user = this.auth.currentUser;
         if (user) {

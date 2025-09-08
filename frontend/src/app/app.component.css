@@ -1,3 +1,328 @@
+/* Floating Action Button */
+.floating-action-button {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4CAF50, #45a049);
+  border: none;
+  box-shadow: 0 4px 20px rgba(76, 175, 80, 0.4);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  z-index: 1000;
+}
+
+.floating-action-button:hover:not(:disabled) {
+  transform: scale(1.1);
+  box-shadow: 0 6px 25px rgba(76, 175, 80, 0.6);
+}
+
+.floating-action-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.fab-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.fab-text {
+  font-size: 9px;
+  margin-top: 2px;
+  text-align: center;
+}
+
+/* Floating Memory Form */
+.floating-memory-form {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  z-index: 1001;
+  min-width: 400px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.form-header h3 {
+  margin: 0;
+  color: #4CAF50;
+  font-size: 18px;
+}
+
+.close-form-button {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #666;
+  padding: 5px;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.close-form-button:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Creative Assistant Styles */
+.creative-assistant {
+  background: rgba(248, 249, 250, 0.95);
+  border: 1px solid #e3f2fd;
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.assistant-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.assistant-header h3 {
+  margin: 0;
+  color: #6a4c93;
+  font-size: 16px;
+}
+
+.assistant-content .loading {
+  color: #666;
+  font-style: italic;
+  text-align: center;
+  padding: 20px;
+}
+
+.suggestion {
+  background: white;
+  padding: 16px;
+  border-radius: 8px;
+  border-left: 4px solid #6a4c93;
+}
+
+.suggestion p {
+  margin: 0 0 12px 0;
+  color: #333;
+  line-height: 1.5;
+}
+
+.use-suggestion-button, .refresh-button {
+  padding: 8px 16px;
+  margin: 4px 8px 4px 0;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.use-suggestion-button {
+  background: #6a4c93;
+  color: white;
+}
+
+.use-suggestion-button:hover {
+  background: #5a3c83;
+}
+
+.refresh-button {
+  background: #f0f0f0;
+  color: #666;
+}
+
+.refresh-button:hover {
+  background: #e0e0e0;
+}
+
+.assistant-button {
+  background: linear-gradient(135deg, #6a4c93, #5a3c83);
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-right: 10px;
+  transition: all 0.2s;
+}
+
+.assistant-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(106, 76, 147, 0.3);
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.submit-button {
+  background: linear-gradient(135deg, #4CAF50, #45a049);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  transition: all 0.2s;
+}
+
+.submit-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.submit-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Poetic Rephrasing Styles */
+.poetic-button {
+  background: linear-gradient(135deg, #9c27b0, #673ab7);
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-right: 10px;
+  transition: all 0.2s;
+}
+
+.poetic-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(156, 39, 176, 0.3);
+}
+
+.poetic-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.poetic-panel {
+  background: rgba(245, 240, 255, 0.95);
+  border: 1px solid rgba(156, 39, 176, 0.2);
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 16px;
+  box-shadow: 0 4px 16px rgba(156, 39, 176, 0.1);
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(156, 39, 176, 0.2);
+}
+
+.panel-header h3 {
+  margin: 0;
+  color: #9c27b0;
+  font-size: 16px;
+}
+
+.poetic-content .poetic-version {
+  background: white;
+  padding: 16px;
+  border-radius: 8px;
+  border-left: 4px solid #9c27b0;
+  margin-bottom: 12px;
+}
+
+.poetic-text {
+  font-size: 16px;
+  line-height: 1.6;
+  color: #333;
+  margin: 0 0 8px 0;
+  font-style: italic;
+}
+
+.suggestion-text {
+  color: #666;
+  font-size: 12px;
+  display: block;
+}
+
+.poetic-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.use-poetic-button, .regenerate-button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.use-poetic-button {
+  background: #9c27b0;
+  color: white;
+}
+
+.use-poetic-button:hover {
+  background: #7b1fa2;
+}
+
+.regenerate-button {
+  background: #f0f0f0;
+  color: #666;
+}
+
+.regenerate-button:hover:not(:disabled) {
+  background: #e0e0e0;
+}
+
+.regenerate-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 :host {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
   font-size: 14px;

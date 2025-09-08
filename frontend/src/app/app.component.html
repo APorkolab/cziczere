@@ -16,11 +16,28 @@
   </header>
 
   <main *ngIf="user | async">
-    <app-memory-create 
-      (memorySubmit)="onMemorySubmit($event)" 
-      [isLoading]="isLoading$ | async"
-      [error]="memoryError$ | async">
-    </app-memory-create>
+    <!-- Floating Action Button -->
+    <button 
+      *ngIf="!showMemoryForm" 
+      class="floating-action-button"
+      (click)="toggleMemoryForm()"
+      [disabled]="isLoading$ | async">
+      <span class="fab-icon">🌱</span>
+      <span class="fab-text">Plant a Memory</span>
+    </button>
+
+    <!-- Floating Memory Form -->
+    <div *ngIf="showMemoryForm" class="floating-memory-form">
+      <div class="form-header">
+        <h3>🌱 Plant a New Memory</h3>
+        <button class="close-form-button" (click)="showMemoryForm = false">✕</button>
+      </div>
+      <app-memory-create 
+        (memorySubmit)="onMemorySubmit($event)" 
+        [isLoading]="isLoading$ | async"
+        [error]="memoryError$ | async">
+      </app-memory-create>
+    </div>
 
     <div class="garden-display">
       <h2>Your Latest Creation</h2>
