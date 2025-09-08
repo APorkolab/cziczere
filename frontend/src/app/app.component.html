@@ -3,7 +3,9 @@
     <h1>🌱 Cziczere: The Digital Memory Garden</h1>
     <ng-container *ngIf="user | async as currentUser; else showLogin">
       <div class="user-info">
-        <button (click)="toggleArView()">Enter AR Mode</button>
+        <button (click)="isArViewVisible = !isArViewVisible">
+          {{ isArViewVisible ? 'Exit AR Mode' : 'Enter AR Mode' }}
+        </button>
         <span>Welcome, {{ currentUser.displayName }}!</span>
         <button (click)="logout()">Logout</button>
       </div>
@@ -14,7 +16,11 @@
   </header>
 
   <main *ngIf="user | async">
-    <app-memory-create (memorySubmit)="onMemorySubmit($event)" [class.disabled]="isLoading$ | async"></app-memory-create>
+    <app-memory-create 
+      (memorySubmit)="onMemorySubmit($event)" 
+      [isLoading]="isLoading$ | async"
+      [error]="memoryError$ | async">
+    </app-memory-create>
 
     <div class="garden-display">
       <h2>Your Latest Creation</h2>

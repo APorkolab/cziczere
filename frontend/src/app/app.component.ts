@@ -41,6 +41,7 @@ export class AppComponent implements OnInit {
   isExporting$ = new BehaviorSubject<boolean>(false);
   isArViewVisible = false;
   insightError$ = new BehaviorSubject<string | null>(null);
+  memoryError$ = new BehaviorSubject<string | null>(null);
 
   constructor() {
     this.memories$ = this.apiService.getMemories();
@@ -66,6 +67,8 @@ export class AppComponent implements OnInit {
 
   onMemorySubmit(memoryText: string) {
     this.isLoading$.next(true);
+    this.memoryError$.next(null);
+    
     this.apiService.createMemory(memoryText).subscribe({
       next: (newMemory) => {
         this.isLoading$.next(false);
@@ -79,6 +82,7 @@ export class AppComponent implements OnInit {
       error: (err) => {
         console.error('Memory creation failed:', err);
         this.isLoading$.next(false);
+        this.memoryError$.next('Failed to create memory. Please try again later.');
       }
     });
   }

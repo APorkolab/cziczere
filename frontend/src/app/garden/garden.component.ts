@@ -83,7 +83,11 @@ export class GardenComponent implements AfterViewInit, OnDestroy {
         this.audioPlayer.play().catch(e => console.error("Error playing audio:", e));
         console.log('Atmosphere data:', data);
       },
-      error: (error) => console.error('Error getting atmosphere:', error)
+      error: (error) => {
+        console.error('Error getting atmosphere:', error);
+        // Fallback to default atmosphere
+        this.scene.background = new THREE.Color(0xabcdef);
+      }
     });
   }
 
@@ -93,7 +97,11 @@ export class GardenComponent implements AfterViewInit, OnDestroy {
         this.memories = memories;
         this.recreateMemoryVisuals();
       },
-      error: (error) => console.error('Error getting memories:', error)
+      error: (error) => {
+        console.error('Error getting memories:', error);
+        // Keep existing memories if any, or show empty garden
+        this.memories = this.memories || [];
+      }
     });
   }
 

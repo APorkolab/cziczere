@@ -40,7 +40,9 @@ export class ApiService {
   private http: HttpClient = inject(HttpClient);
   user$ = user(this.auth);
 
-  // TODO: Replace with the actual URL of your deployed Cloud Function.
+  // LOCAL DEVELOPMENT URLs - Replace with production URLs when deploying:
+  // Production format: 'https://us-central1-your-project-id.cloudfunctions.net/functionName'
+  // Consider moving these to environment.ts for better configuration management
   private generateFunctionUrl = 'http://127.0.0.1:5001/cziczere-ai/us-central1/generateMemoryPlant';
   private analyzeFunctionUrl = 'http://127.0.0.1:5001/cziczere-ai/us-central1/analyzeMemories';
   private atmosphereFunctionUrl = 'http://127.0.0.1:5001/cziczere-ai/us-central1/getAtmosphere';

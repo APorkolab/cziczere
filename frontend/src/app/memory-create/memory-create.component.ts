@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, Output, Input } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 
 @Component({
@@ -8,6 +8,8 @@ import { FormControl, FormGroup, Validators } from '@angular/forms';
 })
 export class MemoryCreateComponent {
   @Output() memorySubmit = new EventEmitter<string>();
+  @Input() isLoading: boolean = false;
+  @Input() error: string | null = null;
 
   memoryForm = new FormGroup({
     text: new FormControl('', [Validators.required, Validators.minLength(10)])
