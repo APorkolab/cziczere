@@ -12,4 +12,37 @@ export const environment = {
     messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
     appId: 'YOUR_APP_ID',
   },
+  apis: {
+    // Local development URLs
+    generateMemoryPlant: 'http://127.0.0.1:5001/cziczere-ai/us-central1/generateMemoryPlant',
+    analyzeMemories: 'http://127.0.0.1:5001/cziczere-ai/us-central1/analyzeMemories',
+    getAtmosphere: 'http://127.0.0.1:5001/cziczere-ai/us-central1/getAtmosphere',
+    exportGarden: 'http://127.0.0.1:5001/cziczere-ai/us-central1/exportGarden',
+    getInsightAudio: 'http://127.0.0.1:5001/cziczere-ai/us-central1/getInsightAudio',
+    poeticRephrasing: 'http://127.0.0.1:5001/cziczere-ai/us-central1/poeticRephrasing',
+    chatWebSocket: 'ws://localhost:8080/chat'
+  },
+  features: {
+    enableAnalytics: false,
+    enablePerformanceMonitoring: false,
+    enableCrashlytics: false,
+    enableNotifications: false,
+    maxMemoriesPerUser: 100,
+    maxConversationHistory: 50,
+    enableAdvancedAR: true,
+    enableProfanityFilter: false,
+    enableRateLimiting: false
+  },
+  monitoring: {
+    sentryDsn: '',
+    logLevel: 'debug',
+    enableUserTracking: false,
+    enableErrorReporting: true
+  },
+  performance: {
+    enableServiceWorker: false,
+    enableLazyLoading: false,
+    enableImageOptimization: false,
+    enableBundleAnalysis: true
+  }
 };

@@ -1,8 +1,9 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, OnDestroy } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Auth, idToken, user } from '@angular/fire/auth';
-import { Firestore, collection, collectionData, query, where, orderBy, limit } from '@angular/fire/firestore';
-import { switchMap, first, Observable, of, map } from 'rxjs';
+import { Firestore, collection, collectionData, query, where, orderBy, limit, onSnapshot, deleteDoc, doc, updateDoc, Unsubscribe } from '@angular/fire/firestore';
+import { switchMap, first, Observable, of, map, BehaviorSubject, startWith, shareReplay } from 'rxjs';
+import { environment } from '../environments/environment';
 
 export interface MemoryData {
   userId: string;
@@ -36,24 +37,69 @@ export interface PoeticRephrasingResponse {
   suggestion: string;
 }
 
+export interface GardenState {
+  memories: MemoryData[];
+  insights: InsightData[];
+  atmosphere: AtmosphereData | null;
+  totalPlants: number;
+  lastUpdated: Date;
+  isLoading: boolean;
+  error: string | null;
+}
+
+export interface RealTimeUpdate {
+  type: 'memory_added' | 'memory_updated' | 'memory_deleted' | 'insight_added' | 'atmosphere_changed';
+  data: any;
+  timestamp: Date;
+}
+
 @Injectable({
   providedIn: 'root'
 })
-export class ApiService {
+export class ApiService implements OnDestroy {
   private auth: Auth = inject(Auth);
   private firestore: Firestore = inject(Firestore);
   private http: HttpClient = inject(HttpClient);
   user$ = user(this.auth);
 
-  // LOCAL DEVELOPMENT URLs - Replace with production URLs when deploying:
-  // Production format: 'https://us-central1-your-project-id.cloudfunctions.net/functionName'
-  // Consider moving these to environment.ts for better configuration management
-  private generateFunctionUrl = 'http://127.0.0.1:5001/cziczere-ai/us-central1/generateMemoryPlant';
-  private analyzeFunctionUrl = 'http://127.0.0.1:5001/cziczere-ai/us-central1/analyzeMemories';
-  private atmosphereFunctionUrl = 'http://127.0.0.1:5001/cziczere-ai/us-central1/getAtmosphere';
-  private exportGardenFunctionUrl = 'http://127.0.0.1:5001/cziczere-ai/us-central1/exportGarden';
-  private insightAudioFunctionUrl = 'http://127.0.0.1:5001/cziczere-ai/us-central1/getInsightAudio';
-  private poeticRephrasingUrl = 'http://127.0.0.1:5001/cziczere-ai/us-central1/poeticRephrasing';
+  // Real-time state management
+  private gardenStateSubject = new BehaviorSubject<GardenState>({
+    memories: [],
+    insights: [],
+    atmosphere: null,
+    totalPlants: 0,
+    lastUpdated: new Date(),
+    isLoading: false,
+    error: null
+  });
+  
+  public gardenState$ = this.gardenStateSubject.asObservable();
+  private updatesSubject = new BehaviorSubject<RealTimeUpdate | null>(null);
+  public updates$ = this.updatesSubject.asObservable();
+  
+  // Firestore listeners
+  private memoriesUnsubscribe?: Unsubscribe;
+  private insightsUnsubscribe?: Unsubscribe;
+
+  // Use environment configuration
+  private generateFunctionUrl = environment.apis.generateMemoryPlant;
+  private analyzeFunctionUrl = environment.apis.analyzeMemories;
+  private atmosphereFunctionUrl = environment.apis.getAtmosphere;
+  private exportGardenFunctionUrl = environment.apis.exportGarden;
+  private insightAudioFunctionUrl = environment.apis.getInsightAudio;
+  private poeticRephrasingUrl = environment.apis.poeticRephrasing;
+
+  constructor() {
+    // Initialize real-time listeners when user state changes
+    this.user$.subscribe(currentUser => {
+      if (currentUser) {
+        this.initializeRealTimeListeners(currentUser.uid);
+      } else {
+        this.cleanup();
+        this.resetGardenState();
+      }
+    });
+  }
 
 
   getInsightAudioUrl(insightId: string): Observable<{audioUrl: string}> {
@@ -170,5 +216,197 @@ export class ApiService {
         return this.http.post<PoeticRephrasingResponse>(this.poeticRephrasingUrl, body, { headers });
       })
     );
+  }
+
+  // Real-time listeners initialization
+  private initializeRealTimeListeners(userId: string): void {
+    this.cleanup(); // Clean up existing listeners
+    this.setLoading(true);
+
+    // Set up memories listener
+    const memoriesCollection = collection(this.firestore, 'memories');
+    const memoriesQuery = query(
+      memoriesCollection,
+      where('userId', '==', userId),
+      orderBy('timestamp', 'desc')
+    );
+
+    this.memoriesUnsubscribe = onSnapshot(memoriesQuery, 
+      (snapshot) => {
+        const memories: MemoryData[] = [];
+        snapshot.forEach(doc => {
+          memories.push({ ...doc.data(), id: doc.id } as MemoryData);
+        });
+        
+        this.updateGardenState({
+          memories,
+          totalPlants: memories.length,
+          lastUpdated: new Date(),
+          isLoading: false,
+          error: null
+        });
+
+        // Emit update event
+        this.updatesSubject.next({
+          type: 'memory_updated',
+          data: { count: memories.length },
+          timestamp: new Date()
+        });
+      },
+      (error) => {
+        console.error('Error listening to memories:', error);
+        this.updateGardenState({ 
+          error: 'Failed to load memories',
+          isLoading: false 
+        });
+      }
+    );
+
+    // Set up insights listener
+    const insightsCollection = collection(this.firestore, 'insights');
+    const insightsQuery = query(
+      insightsCollection,
+      where('userId', '==', userId),
+      orderBy('timestamp', 'desc'),
+      limit(10)
+    );
+
+    this.insightsUnsubscribe = onSnapshot(insightsQuery,
+      (snapshot) => {
+        const insights: InsightData[] = [];
+        snapshot.forEach(doc => {
+          insights.push({ ...doc.data(), id: doc.id } as InsightData);
+        });
+        
+        this.updateGardenState({ insights });
+        
+        // Emit update event
+        this.updatesSubject.next({
+          type: 'insight_added',
+          data: { count: insights.length },
+          timestamp: new Date()
+        });
+      },
+      (error) => {
+        console.error('Error listening to insights:', error);
+      }
+    );
+
+    // Load atmosphere on initialization
+    this.refreshAtmosphere();
+  }
+
+  private updateGardenState(partialState: Partial<GardenState>): void {
+    const currentState = this.gardenStateSubject.value;
+    this.gardenStateSubject.next({
+      ...currentState,
+      ...partialState
+    });
+  }
+
+  private setLoading(loading: boolean): void {
+    this.updateGardenState({ isLoading: loading });
+  }
+
+  private resetGardenState(): void {
+    this.gardenStateSubject.next({
+      memories: [],
+      insights: [],
+      atmosphere: null,
+      totalPlants: 0,
+      lastUpdated: new Date(),
+      isLoading: false,
+      error: null
+    });
+  }
+
+  private cleanup(): void {
+    if (this.memoriesUnsubscribe) {
+      this.memoriesUnsubscribe();
+      this.memoriesUnsubscribe = undefined;
+    }
+    if (this.insightsUnsubscribe) {
+      this.insightsUnsubscribe();
+      this.insightsUnsubscribe = undefined;
+    }
+  }
+
+  // Enhanced methods with real-time updates
+  refreshAtmosphere(): void {
+    this.getAtmosphere().subscribe({
+      next: (atmosphere) => {
+        this.updateGardenState({ atmosphere });
+        this.updatesSubject.next({
+          type: 'atmosphere_changed',
+          data: atmosphere,
+          timestamp: new Date()
+        });
+      },
+      error: (error) => {
+        console.error('Error refreshing atmosphere:', error);
+      }
+    });
+  }
+
+  // Memory management with real-time updates
+  deleteMemory(memoryId: string): Observable<void> {
+    const memoryDoc = doc(this.firestore, 'memories', memoryId);
+    return new Observable(observer => {
+      deleteDoc(memoryDoc).then(() => {
+        this.updatesSubject.next({
+          type: 'memory_deleted',
+          data: { id: memoryId },
+          timestamp: new Date()
+        });
+        observer.next();
+        observer.complete();
+      }).catch(error => {
+        observer.error(error);
+      });
+    });
+  }
+
+  updateMemory(memoryId: string, updates: Partial<MemoryData>): Observable<void> {
+    const memoryDoc = doc(this.firestore, 'memories', memoryId);
+    return new Observable(observer => {
+      updateDoc(memoryDoc, updates).then(() => {
+        observer.next();
+        observer.complete();
+      }).catch(error => {
+        observer.error(error);
+      });
+    });
+  }
+
+  // Get current garden state synchronously
+  getCurrentGardenState(): GardenState {
+    return this.gardenStateSubject.value;
+  }
+
+  // Enhanced memory creation with optimistic updates
+  createMemoryWithOptimisticUpdate(text: string): Observable<MemoryData> {
+    // Create optimistic memory
+    const optimisticMemory: MemoryData = {
+      userId: this.auth.currentUser?.uid || '',
+      userText: text,
+      imagePrompt: 'Generating...',
+      imageUrl: '',
+      timestamp: Date.now(),
+      type: 'memory',
+      emotions: {}
+    };
+
+    // Add optimistic update
+    const currentState = this.getCurrentGardenState();
+    this.updateGardenState({
+      memories: [optimisticMemory, ...currentState.memories],
+      totalPlants: currentState.totalPlants + 1
+    });
+
+    return this.createMemory(text);
+  }
+
+  ngOnDestroy(): void {
+    this.cleanup();
   }
 }
