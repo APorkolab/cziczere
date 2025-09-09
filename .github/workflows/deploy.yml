@@ -30,7 +30,7 @@ jobs:
 
       - name: Install frontend dependencies
         working-directory: ./frontend
-        run: npm ci
+        run: npm i
 
       - name: Lint frontend code
         working-directory: ./frontend
@@ -68,7 +68,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./frontend
-        run: npm ci
+        run: npm i
 
       - name: Run security audit
         working-directory: ./frontend
@@ -155,7 +155,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./frontend
-        run: npm ci
+        run: npm i
 
       - name: Create production environment
         working-directory: ./frontend/src/environments
