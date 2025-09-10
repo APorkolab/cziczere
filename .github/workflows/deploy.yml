@@ -164,10 +164,27 @@ jobs:
         run: |
           echo "Checking authentication..."
           gcloud auth list
+          echo "Current service account:"
+          gcloud config get-value account
           echo "Checking project access..."
-          gcloud projects describe ${{ env.FIREBASE_PROJECT_ID }}
-          echo "Checking Firebase project..."
-          firebase projects:list
+          if gcloud projects describe ${{ env.FIREBASE_PROJECT_ID }}; then
+            echo "✅ Project access verified"
+          else
+            echo "❌ Cannot access project - check service account permissions"
+            echo "Service account needs these roles:"
+            echo "  - Editor or Project Editor"
+            echo "  - Firebase Admin"
+            echo "  - Cloud Functions Admin"
+            echo "  - Service Usage Admin"
+            exit 1
+          fi
+          echo "Checking Firebase project access..."
+          if firebase projects:list; then
+            echo "✅ Firebase access verified"
+          else
+            echo "❌ Cannot access Firebase - check service account has Firebase Admin role"
+            exit 1
+          fi
 
       - name: Deploy Cloud Functions
         run: |
@@ -277,10 +294,27 @@ jobs:
         run: |
           echo "Checking authentication..."
           gcloud auth list
+          echo "Current service account:"
+          gcloud config get-value account
           echo "Checking project access..."
-          gcloud projects describe ${{ env.FIREBASE_PROJECT_ID }}
-          echo "Checking Firebase project..."
-          firebase projects:list
+          if gcloud projects describe ${{ env.FIREBASE_PROJECT_ID }}; then
+            echo "✅ Project access verified"
+          else
+            echo "❌ Cannot access project - check service account permissions"
+            echo "Service account needs these roles:"
+            echo "  - Editor or Project Editor"
+            echo "  - Firebase Admin"
+            echo "  - Firebase Hosting Admin"
+            echo "  - Service Usage Admin"
+            exit 1
+          fi
+          echo "Checking Firebase project access..."
+          if firebase projects:list; then
+            echo "✅ Firebase access verified"
+          else
+            echo "❌ Cannot access Firebase - check service account has Firebase Admin role"
+            exit 1
+          fi
 
       - name: Deploy to Firebase Hosting
         working-directory: ./frontend
