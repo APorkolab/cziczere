@@ -105,7 +105,7 @@ jobs:
           key: ${{ runner.os }}-m2-${{ hashFiles('functions/pom.xml') }}
 
       - name: CodeQL Analysis
-        uses: github/codeql-action/init@v2
+        uses: github/codeql-action/init@v3
         with:
           languages: javascript, java
           
@@ -114,7 +114,7 @@ jobs:
         run: mvn compile test-compile
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
+        uses: github/codeql-action/analyze@v3
 
   # Backend testing and deployment
   deploy-backend:
