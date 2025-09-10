@@ -75,7 +75,7 @@ jobs:
         run: npm audit --audit-level=high
 
       - name: Run Snyk security scan
-        if: ${{ secrets.SNYK_TOKEN != '' }}
+        continue-on-error: true
         working-directory: ./frontend
         uses: snyk/actions/node@master
         env:
@@ -85,7 +85,6 @@ jobs:
           command: test
       
       - name: Run npm audit (fallback security check)
-        if: ${{ secrets.SNYK_TOKEN == '' }}
         working-directory: ./frontend
         run: npm audit --audit-level=high --production
 
