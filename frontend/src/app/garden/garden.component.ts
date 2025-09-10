@@ -191,7 +191,7 @@ export class GardenComponent implements AfterViewInit, OnDestroy {
 
   private animateWeather(): void {
     if (this.weatherParticles) {
-        const positions = this.weatherParticles.geometry.attributes.position.array as Float32Array;
+        const positions = this.weatherParticles.geometry.attributes['position'].array as Float32Array;
         const speed = this.atmosphere?.weather === 'Snowy' ? -0.05 : -0.2;
 
         for (let i = 1; i < positions.length; i += 3) {
@@ -200,7 +200,7 @@ export class GardenComponent implements AfterViewInit, OnDestroy {
                 positions[i] = 50; // Reset to top
             }
         }
-        this.weatherParticles.geometry.attributes.position.needsUpdate = true;
+        this.weatherParticles.geometry.attributes['position'].needsUpdate = true;
     }
   }
 
@@ -235,6 +235,7 @@ export class GardenComponent implements AfterViewInit, OnDestroy {
       const memory = clickedObject.userData['memory'] as MemoryData;
       if (memory) {
         this.memoryClicked.emit(memory);
+      }
     }
   }
 
@@ -294,7 +295,6 @@ export class GardenComponent implements AfterViewInit, OnDestroy {
       this.emptyGardenCenter = null;
     }
   }
-}
 
   public exportAsPoster(): void {
     const posterWidth = 4096;
@@ -307,17 +307,16 @@ export class GardenComponent implements AfterViewInit, OnDestroy {
     posterRenderer.domElement.style.left = '-9999px';
     document.body.appendChild(posterRenderer.domElement);
 
-
-    const boundingBox = new THREE.Box3().setFromObject(this.scene);
+    const boundingBox = new THREE.Box3().setFromObject(this.scene!);
     const center = boundingBox.getCenter(new THREE.Vector3());
     const size = boundingBox.getSize(new THREE.Vector3());
     const maxDim = Math.max(size.x, size.y, size.z);
-    const fov = this.camera.fov * (Math.PI / 180);
+    const fov = this.camera!.fov * (Math.PI / 180);
     let cameraZ = Math.abs(maxDim / 2 * Math.tan(fov * 2));
     cameraZ *= 1.1;
 
     const posterCamera = new THREE.PerspectiveCamera(
-      this.camera.fov,
+      this.camera!.fov,
       posterWidth / posterHeight,
       0.1,
       1000
@@ -325,7 +324,7 @@ export class GardenComponent implements AfterViewInit, OnDestroy {
     posterCamera.position.set(center.x, center.y, center.z + cameraZ);
     posterCamera.lookAt(center);
 
-    posterRenderer.render(this.scene, posterCamera);
+    posterRenderer.render(this.scene!, posterCamera);
 
     const link = document.createElement('a');
     link.download = 'kert-poszter.png';

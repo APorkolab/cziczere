@@ -26,7 +26,7 @@ export class ArViewComponent implements OnInit, OnDestroy {
   private camera!: THREE.PerspectiveCamera;
   private controller!: THREE.XRTargetRaySpace;
   private reticle!: THREE.Mesh;
-  private hitTestSource: THREE.XRHitTestSource | null = null;
+  private hitTestSource: any | null = null; // THREE.XRHitTestSource
   private hitTestSourceRequested = false;
   private placedObjects: { mesh: THREE.Mesh, memory: MemoryData }[] = [];
   private raycaster = new THREE.Raycaster();
@@ -77,7 +77,7 @@ export class ArViewComponent implements OnInit, OnDestroy {
       }
       // Make all placed objects face the camera
       this.placedObjects.forEach(object => {
-        object.quaternion.copy(this.camera.quaternion);
+        object.mesh.quaternion.copy(this.camera.quaternion);
       });
 
       this.renderer.render(this.scene, this.camera);
@@ -104,7 +104,7 @@ export class ArViewComponent implements OnInit, OnDestroy {
 
   private onSelect(): void {
     // First, try to interact with existing objects
-    this.raycaster.setFromCamera({ x: 0, y: 0 }, this.camera);
+    this.raycaster.setFromCamera(new THREE.Vector2(0, 0), this.camera);
     const intersects = this.raycaster.intersectObjects(this.placedObjects.map(p => p.mesh));
 
     if (intersects.length > 0) {
@@ -178,13 +178,13 @@ export class ArViewComponent implements OnInit, OnDestroy {
     return canvas;
   }
 
-  private async updateHitTest(frame: THREE.XRFrame): Promise<void> {
+  private async updateHitTest(frame: any): Promise<void> { // THREE.XRFrame
     const session = this.renderer.xr.getSession();
     if (!session) return;
 
     if (!this.hitTestSourceRequested) {
       const referenceSpace = await session.requestReferenceSpace('viewer');
-      this.hitTestSource = await session.requestHitTestSource({ space: referenceSpace });
+      this.hitTestSource = await session.requestHitTestSource?.({ space: referenceSpace });
       this.hitTestSourceRequested = true;
     }
 

@@ -29,7 +29,7 @@
       type="button"
       (click)="generatePoeticVersion()"
       class="poetic-button"
-      [disabled]="isLoading || assistantLoading || memoryForm.get('text')?.value?.length < 10">
+      [disabled]="isLoading || assistantLoading || (memoryForm.get('text')?.value?.length || 0) < 10">
       <span *ngIf="!assistantLoading">✨ Get AI Poetic Version</span>
       <span *ngIf="assistantLoading">✨ Creating Magic...</span>
     </button>

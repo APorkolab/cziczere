@@ -235,7 +235,10 @@ export class ApiService implements OnDestroy {
       (snapshot) => {
         const memories: MemoryData[] = [];
         snapshot.forEach(doc => {
-          memories.push({ ...doc.data(), id: doc.id } as MemoryData);
+          const data = doc.data();
+          if (data) {
+            memories.push({ ...(data as any), id: doc.id } as MemoryData);
+          }
         });
         
         this.updateGardenState({

@@ -15,23 +15,23 @@ import { ArViewComponent } from './ar-view/ar-view.component';
 import { GardenComponent } from './garden/garden.component';
 
 @NgModule({
-  declarations: [
-    AppComponent,
-    MemoryCreateComponent,
-    InsightDisplayComponent
-  ],
+  declarations: [],
   imports: [
     BrowserModule,
+    AppComponent,
     GardenComponent,
     ArViewComponent,
+    MemoryCreateComponent,
+    InsightDisplayComponent,
     ReactiveFormsModule,
-    HttpClientModule,
+    HttpClientModule
+  ],
+  providers: [
     provideFirebaseApp(() => initializeApp(environment.firebase)),
     provideAuth(() => getAuth()),
     provideFirestore(() => getFirestore()),
     provideFunctions(() => getFunctions())
   ],
-  providers: [],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

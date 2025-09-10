@@ -1,9 +1,12 @@
 import { Component, EventEmitter, Output, Input, inject } from '@angular/core';
-import { FormControl, FormGroup, Validators } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import { FormControl, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ApiService, PoeticRephrasingResponse } from '../api.service';
 
 @Component({
   selector: 'app-memory-create',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './memory-create.component.html',
   styleUrls: ['./memory-create.component.css']
 })
@@ -44,7 +47,7 @@ export class MemoryCreateComponent {
     this.assistantSuggestion = '';
   }
   
-  private generateSuggestion() {
+  generateSuggestion() {
     this.assistantLoading = true;
     // Simple creative prompts based on common memory themes
     const prompts = [

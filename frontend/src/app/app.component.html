@@ -34,7 +34,7 @@
       </div>
       <app-memory-create 
         (memorySubmit)="onMemorySubmit($event)" 
-        [isLoading]="isLoading$ | async"
+        [isLoading]="!!(isLoading$ | async)"
         [error]="memoryError$ | async">
       </app-memory-create>
     </div>
@@ -47,6 +47,7 @@
       </div>
 
     <app-garden (memoryClicked)="onMemoryClicked($event)"></app-garden>
+    </div>
 
     <div class="gardener-actions">
       <button (click)="requestInsight('insight')" [disabled]="isInsightLoading$ | async">
@@ -80,7 +81,7 @@
       </button>
     </div>
 
-    <app-insight-display [insight]="latestInsight$ | async"></app-insight-display>
+    <app-insight-display [insight]="(latestInsight$ | async) || null"></app-insight-display>
 
   </main>
 
