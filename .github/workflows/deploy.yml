@@ -158,8 +158,7 @@ jobs:
 
       - name: Deploy Cloud Functions
         run: |
-          firebase use ${{ env.FIREBASE_PROJECT_ID }}
-          firebase deploy --only functions --token ${{ secrets.FIREBASE_TOKEN }}
+          firebase deploy --only functions --project ${{ env.FIREBASE_PROJECT_ID }} --token ${{ secrets.FIREBASE_TOKEN }}
 
   # Frontend build and deployment
   deploy-frontend:
@@ -260,8 +259,7 @@ jobs:
       - name: Deploy to Firebase Hosting
         working-directory: ./frontend
         run: |
-          firebase use ${{ env.FIREBASE_PROJECT_ID }}
-          firebase deploy --only hosting --token ${{ secrets.FIREBASE_TOKEN }}
+          firebase deploy --only hosting --project ${{ env.FIREBASE_PROJECT_ID }} --token ${{ secrets.FIREBASE_TOKEN }}
 
   # Performance testing
   performance-test:
@@ -339,7 +337,7 @@ jobs:
           status: success
           text: '🚀 Memory Garden deployed successfully!'
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
       - name: Notify deployment failure
         if: contains(needs.*.result, 'failure')
@@ -348,7 +346,7 @@ jobs:
           status: failure
           text: '❌ Memory Garden deployment failed!'
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
       - name: Create deployment record
         if: needs.deploy-frontend.result == 'success'
