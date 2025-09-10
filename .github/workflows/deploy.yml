@@ -87,10 +87,26 @@ jobs:
         working-directory: ./frontend
         run: npm audit --audit-level=high --production
 
+      - name: Setup Java for CodeQL
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+
+      - name: Cache Maven dependencies for CodeQL
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('functions/pom.xml') }}
+
       - name: CodeQL Analysis
         uses: github/codeql-action/init@v2
         with:
           languages: javascript, java
+          
+      - name: Build Java code for CodeQL
+        working-directory: ./functions
+        run: mvn compile test-compile
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v2
@@ -115,14 +131,14 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          key: ${{ runner.os }}-m2-${{ hashFiles('functions/pom.xml') }}
 
       - name: Test Cloud Functions
-        working-directory: ./backend
+        working-directory: ./functions
         run: mvn test
 
       - name: Build Cloud Functions
-        working-directory: ./backend
+        working-directory: ./functions
         run: mvn clean package
 
       - name: Setup Firebase CLI
@@ -136,7 +152,6 @@ jobs:
         run: npm install -g firebase-tools
 
       - name: Deploy Cloud Functions
-        working-directory: ./backend
         run: |
           firebase use ${{ env.FIREBASE_PROJECT_ID }}
           firebase deploy --only functions --token ${{ secrets.FIREBASE_TOKEN }}
